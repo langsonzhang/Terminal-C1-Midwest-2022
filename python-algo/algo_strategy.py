@@ -1,11 +1,3 @@
-import gamelib
-import random
-import math
-import warnings
-from sys import maxsize
-import json
-
-
 """
 Most of the algo code you write will be in this file unless you create new
 modules yourself. Start by modifying the 'on_turn' function.
@@ -18,6 +10,15 @@ Advanced strategy tips:
   board states. Though, we recommended making a copy of the map to preserve 
   the actual current map state.
 """
+
+
+import gamelib
+import random
+import math
+import warnings
+from sys import maxsize
+import json
+
 
 class AlgoStrategy(gamelib.AlgoCore):
     def __init__(self):
@@ -43,6 +44,49 @@ class AlgoStrategy(gamelib.AlgoCore):
         SP = 0
         # This is a good place to do initial setup
         self.scored_on_locations = []
+
+        # For efficient look-up of SPAWN EDGES
+        global LEFT_SPAWN_EDGES, RIGHT_SPAWN_EDGES
+        temp_left, temp_right = gamelib.game_map.GameMap(self.config).get_edges()[2:]
+
+        LEFT_SPAWN_EDGES = set([tuple(loc) for loc in temp_left])
+        RIGHT_SPAWN_EDGES = set([tuple(loc) for loc in temp_right])
+
+        # Define regions for player 1 for later
+        global P1_REGION_1, P1_REGION_2, P1_REGION_3, P1_REGION_4, P1_REGION_5, P1_REGION_6, P1_REGION_7, P1_REGION_8
+        global P1_COORD_TO_REGION
+        P1_REGION_1 = {(0, 13), (1, 13), (2, 13), (3, 13), (4, 13), (5, 13), (6, 13), (7, 13), (1, 12), (2, 12), (3, 12), (4, 12), (5, 12), (6, 12), (7, 12), (2, 11), (3, 11), (4, 11), (5, 11), (6, 11), (7, 11), (3, 10), (4, 10), (5, 10), (6, 10), (7, 10)}
+        P1_REGION_2 = {(8, 13), (9, 13), (10, 13), (11, 13), (12, 13), (13, 13), (8, 12), (9, 12), (10, 12), (11, 12), (12, 12), (13, 12), (8, 11), (9, 11), (10, 11), (11, 11), (12, 11), (13, 11), (8, 10), (9, 10), (10, 10), (11, 10), (12, 10), (13, 10)}
+        P1_REGION_3 = {(14, 13), (15, 13), (16, 13), (17, 13), (18, 13), (19, 13), (14, 12), (15, 12), (16, 12), (17, 12), (18, 12), (19, 12), (14, 11), (15, 11), (16, 11), (17, 11), (18, 11), (19, 11), (14, 10), (15, 10), (16, 10), (17, 10), (18, 10), (19, 10)}
+        P1_REGION_4 = {(20, 13), (21, 13), (22, 13), (23, 13), (24, 13), (25, 13), (26, 13), (27, 13), (20, 12), (21, 12), (22, 12), (23, 12), (24, 12), (25, 12), (26, 12), (20, 11), (21, 11), (22, 11), (23, 11), (24, 11), (25, 11), (20, 10), (21, 10), (22, 10), (23, 10), (24, 10)}
+        P1_REGION_5 = {(4, 9), (5, 9), (6, 9), (7, 9), (8, 9), (9, 9), (10, 9), (5, 8), (6, 8), (7, 8), (8, 8), (9, 8), (10, 8), (6, 7), (7, 7), (8, 7), (9, 7), (10, 7), (7, 6), (8, 6), (9, 6), (10, 6), (8, 5), (9, 5), (10, 5), (9, 4), (10, 4), (10, 3)}
+        P1_REGION_6 = {(17, 9), (18, 9), (19, 9), (20, 9), (21, 9), (22, 9), (23, 9), (17, 8), (18, 8), (19, 8), (20, 8), (21, 8), (22, 8), (17, 7), (18, 7), (19, 7), (20, 7), (21, 7), (17, 6), (18, 6), (19, 6), (20, 6), (17, 5), (18, 5), (19, 5), (17, 4), (18, 4), (17, 3)}
+        P1_REGION_7 = {(11, 6), (12, 6), (13, 6), (14, 6), (15, 6), (16, 6), (11, 5), (12, 5), (13, 5), (14, 5), (15, 5), (16, 5), (11, 4), (12, 4), (13, 4), (14, 4), (15, 4), (16, 4), (11, 3), (12, 3), (13, 3), (14, 3), (15, 3), (16, 3), (11, 2), (12, 2), (13, 2), (14, 2), (15, 2), (16, 2), (12, 1), (13, 1), (14, 1), (15, 1), (13, 0), (14, 0)}
+        P1_REGION_8 = {(11, 9), (12, 9), (13, 9), (14, 9), (15, 9), (16, 9), (11, 8), (12, 8), (13, 8), (14, 8), (15, 8), (16, 8), (11, 7), (12, 7), (13, 7), (14, 7), (15, 7), (16, 7)}
+
+        p1_regions = [P1_REGION_1, P1_REGION_2, P1_REGION_3, P1_REGION_4, P1_REGION_5, P1_REGION_6, P1_REGION_7, P1_REGION_8]
+        P1_COORD_TO_REGION = {}
+        for i in range(8):
+            for tup in p1_regions[i]:
+                P1_COORD_TO_REGION[tup] = i + 1
+
+        # Define regions for player 2 for later
+        global P2_REGION_1, P2_REGION_2, P2_REGION_3, P2_REGION_4, P2_REGION_5, P2_REGION_6, P2_REGION_7, P2_REGION_8
+        global P2_COORD_TO_REGION
+        P2_REGION_1 = {(3, 17), (4, 17), (5, 17), (6, 17), (7, 17), (2, 16), (3, 16), (4, 16), (5, 16), (6, 16), (7, 16), (1, 15), (2, 15), (3, 15), (4, 15), (5, 15), (6, 15), (7, 15), (0, 14), (1, 14), (2, 14), (3, 14), (4, 14), (5, 14), (6, 14), (7, 14)}
+        P2_REGION_2 = {(8, 17), (9, 17), (10, 17), (11, 17), (12, 17), (13, 17), (8, 16), (9, 16), (10, 16), (11, 16), (12, 16), (13, 16), (8, 15), (9, 15), (10, 15), (11, 15), (12, 15), (13, 15), (8, 14), (9, 14), (10, 14), (11, 14), (12, 14), (13, 14)}
+        P2_REGION_3 = {(14, 17), (15, 17), (16, 17), (17, 17), (18, 17), (19, 17), (14, 16), (15, 16), (16, 16), (17, 16), (18, 16), (19, 16), (14, 15), (15, 15), (16, 15), (17, 15), (18, 15), (19, 15), (14, 14), (15, 14), (16, 14), (17, 14), (18, 14), (19, 14)}
+        P2_REGION_4 = {(20, 17), (21, 17), (22, 17), (23, 17), (24, 17), (20, 16), (21, 16), (22, 16), (23, 16), (24, 16), (25, 16), (20, 15), (21, 15), (22, 15), (23, 15), (24, 15), (25, 15), (26, 15), (20, 14), (21, 14), (22, 14), (23, 14), (24, 14), (25, 14), (26, 14), (27, 14)}
+        P2_REGION_5 = {(10, 24), (9, 23), (10, 23), (8, 22), (9, 22), (10, 22), (7, 21), (8, 21), (9, 21), (10, 21), (6, 20), (7, 20), (8, 20), (9, 20), (10, 20), (5, 19), (6, 19), (7, 19), (8, 19), (9, 19), (10, 19), (4, 18), (5, 18), (6, 18), (7, 18), (8, 18), (9, 18), (10, 18)}
+        P2_REGION_6 = {(17, 24), (17, 23), (18, 23), (17, 22), (18, 22), (19, 22), (17, 21), (18, 21), (19, 21), (20, 21), (17, 20), (18, 20), (19, 20), (20, 20), (21, 20), (17, 19), (18, 19), (19, 19), (20, 19), (21, 19), (22, 19), (17, 18), (18, 18), (19, 18), (20, 18), (21, 18), (22, 18), (23, 18)}
+        P2_REGION_7 = {(13, 27), (14, 27), (12, 26), (13, 26), (14, 26), (15, 26), (11, 25), (12, 25), (13, 25), (14, 25), (15, 25), (16, 25), (11, 24), (12, 24), (13, 24), (14, 24), (15, 24), (16, 24), (11, 23), (12, 23), (13, 23), (14, 23), (15, 23), (16, 23), (11, 22), (12, 22), (13, 22), (14, 22), (15, 22), (16, 22), (11, 21), (12, 21), (13, 21), (14, 21), (15, 21), (16, 21)}
+        P2_REGION_8 = {(11, 20), (12, 20), (13, 20), (14, 20), (15, 20), (16, 20), (11, 19), (12, 19), (13, 19), (14, 19), (15, 19), (16, 19), (11, 18), (12, 18), (13, 18), (14, 18), (15, 18), (16, 18)}
+
+        p2_regions = [P2_REGION_1, P2_REGION_2, P2_REGION_3, P2_REGION_4, P2_REGION_5, P2_REGION_6, P2_REGION_7, P2_REGION_8]
+        P2_COORD_TO_REGION = {}
+        for i in range(8):
+            for tup in p2_regions[i]:
+                P2_COORD_TO_REGION[tup] = i + 1
 
     def on_turn(self, turn_state):
         """
@@ -154,27 +198,57 @@ class AlgoStrategy(gamelib.AlgoCore):
             units can occupy the same space.
             """
 
-    def demolisher_line_strategy(self, game_state):
+    def demolisher_line_strategy(self, game_state, num_units=1, y=13, 
+            from_right=True, window_size=10, clean_up=True):
         """
-        Build a line of the cheapest stationary unit so our demolisher can attack from long range.
+        Build a line of walls so our demolisher can attack from long range.
+
+        Parameters
+        ----------
+        num_units : int
+            Number of demolishers to attempt to send
+        y : int
+            y-level of wall
+        from_right : bool
+            If true, demolisher's spawn from the right, or the left otherwise.
+        window_size : int
+            The width of the wall the demolisher walks along
+        clean_up : bool
+            If true, removes placed units.
+
+        Precondition
+        ------------
+        Assumes there is a path from the demolisher to the wall.
         """
-        # First let's figure out the cheapest unit
-        # We could just check the game rules, but this demonstrates how to use the GameUnit class
-        stationary_units = [WALL, TURRET, SUPPORT]
         cheapest_unit = WALL
-        for unit in stationary_units:
-            unit_class = gamelib.GameUnit(unit, game_state.config)
-            if unit_class.cost[game_state.MP] < gamelib.GameUnit(cheapest_unit, game_state.config).cost[game_state.MP]:
-                cheapest_unit = unit
 
         # Now let's build out a line of stationary units. This will prevent our demolisher from running into the enemy base.
         # Instead they will stay at the perfect distance to attack the front two rows of the enemy base.
-        for x in range(27, 5, -1):
-            game_state.attempt_spawn(cheapest_unit, [x, 11])
+        start = 19 if from_right else 7
+        end = (start - window_size - 1) if from_right else (start + window_size + 1)
+        increment = -1 if from_right else 1
+        for x in range(start, end, increment):
+            # NEW: If there's already a unit there, don't do anything.
+            unit = game_state.contains_stationary_unit([x, y])
+            if unit:
+                continue
 
-        # Now spawn demolishers next to the line
-        # By asking attempt_spawn to spawn 1000 units, it will essentially spawn as many as we have resources for
-        game_state.attempt_spawn(DEMOLISHER, [24, 10], 1000)
+            game_state.attempt_spawn(cheapest_unit, [x, y])
+
+            if clean_up:
+                game_state.attempt_remove([x, y])
+
+        spawn_loc = (22, 8)
+
+        if from_right:
+            spawn_loc = (22, 8)
+        else:
+            spawn_loc = (5, 8)
+
+        # TODO: Need to check if there is a path to the wall
+
+        # Attempt to spawn demolishers
+        game_state.attempt_spawn(DEMOLISHER, spawn_loc, num_units)
 
     def least_damage_spawn_location(self, game_state, location_options):
         """
@@ -232,6 +306,32 @@ class AlgoStrategy(gamelib.AlgoCore):
                 self.scored_on_locations.append(location)
                 gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
 
+    
+    # HELPER FUNCTIONS
+    # TODO: Complete this function if it'll be useful later on
+    def find_spawn(location, from_right=True):
+        """
+        Given a location that we would like to reach, move diagonally down-right
+        or down-left to find a possible location to spawn from.
+
+        Parameters
+        ----------
+        location : list or tuple or array-like
+            Coordinates of the form (x, y).
+        from_right : bool, default True
+            If true, we 
+        
+        Return
+        ------
+        A location tuple (x, y) that we can spawn a mobile unit at.
+        """
+        if from_right:
+            if (location[0], location[1]) in LEFT_SPAWN_EDGES:
+                # TODO: Check if it's occupied. If so, move up right or up-left  
+                pass 
+
+
+            
 
 if __name__ == "__main__":
     algo = AlgoStrategy()
