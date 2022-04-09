@@ -16,8 +16,9 @@ import gamelib
 import random
 import math
 import warnings
-from sys import maxsize
+from sys import maxsize, stderr
 import json
+from collections import OrderedDict
 
 
 class AlgoStrategy(gamelib.AlgoCore):
@@ -43,7 +44,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         MP = 1
         SP = 0
         # This is a good place to do initial setup
-        self.scored_on_locations = []
+        self.scored_on_locations = set()
+
+        self.p1_walls_to_repair = OrderedDict()
+        self.p2_support_locations = {}       # stored as (location, level)
 
         # For efficient look-up of SPAWN EDGES
         global LEFT_SPAWN_EDGES, RIGHT_SPAWN_EDGES
@@ -99,6 +103,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state = gamelib.GameState(self.config, turn_state)
         gamelib.debug_write('Performing turn {} of your custom algo strategy'.format(game_state.turn_number))
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
+
+        print(f"Walls to repair: {self.p1_walls_to_repair}", file=stderr)
+        print(f"Enemy support locations: {self.p2_support_locations}", file=stderr)
 
         self.starter_strategy(game_state)
 
@@ -170,12 +177,14 @@ class AlgoStrategy(gamelib.AlgoCore):
         We can track where the opponent scored by looking at events in action frames 
         as shown in the on_action_frame function
         """
-        for location in self.scored_on_locations:
+        locations = list(self.scored_on_locations)
+        for location in locations:
             # Build turret one space above so that it doesn't block our own edge spawn locations
             build_location = [location[0], location[1]+1]
             game_state.attempt_spawn(TURRET, build_location)
+            self.scored_on_locations.remove(location)
 
-    def stall_with_interceptors(self, game_state):
+    def stall_with_interceptors(self, game_state, num_units):
         """
         Send out interceptors at random locations to defend our base from enemy moving units.
         """
@@ -261,6 +270,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         for location in location_options:
             path = game_state.find_path_to_edge(location)
             damage = 0
+
+
+
             for path_location in path:
                 # Get number of enemy turrets that can attack each location and multiply by turret damage
                 damage += len(game_state.get_attackers(path_location, 0)) * gamelib.GameUnit(TURRET, game_state.config).damage_i
@@ -303,10 +315,37 @@ class AlgoStrategy(gamelib.AlgoCore):
             # 1 is integer for yourself, 2 is opponent (StarterKit code uses 0, 1 as player_index instead)
             if not unit_owner_self:
                 gamelib.debug_write("Got scored on at: {}".format(location))
-                self.scored_on_locations.append(location)
+                self.scored_on_locations.add(tuple(location))
                 gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
+        
 
-    
+        # TODO: Review this
+        # Try to see where our wall was destroyed to repair...
+        deaths = events["breach"]
+        walls_to_repair = {}
+        wall = WALL
+
+        def add_wall_to_repair(death):
+            if (death[3] == 1) and (death[1] == wall) and (not death[4]):
+                walls_to_repair[tuple(death[0])] = None
+        map(add_wall_to_repair, deaths)
+        self.p1_walls_to_repair.update(walls_to_repair)
+            
+        
+        # Find all enemy support locations and their level
+        shields = events["shield"]
+        support_locations = {}
+
+        def find_enemy_support(shield):
+            """Given a shielding event, get the enemy support's location."""
+            if shield[6] == 2:
+                location = tuple(shield[0])
+                lvl = 1 if shield[2] == 3 else 2
+                support_locations[location] = lvl
+        map(find_enemy_support, shields)
+        self.p2_support_locations.update(support_locations)
+
+
     # HELPER FUNCTIONS
     # TODO: Complete this function if it'll be useful later on
     def find_spawn(location, from_right=True):
@@ -330,8 +369,6 @@ class AlgoStrategy(gamelib.AlgoCore):
                 # TODO: Check if it's occupied. If so, move up right or up-left  
                 pass 
 
-
-            
 
 if __name__ == "__main__":
     algo = AlgoStrategy()

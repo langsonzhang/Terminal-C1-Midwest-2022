@@ -12,3 +12,6 @@ dist/*
 */.idea/*
 
 .vscode/*
+
+test_algo_linux
+test_algo_mac
