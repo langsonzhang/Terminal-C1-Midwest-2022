@@ -13,5 +13,5 @@ dist/*
 
 .vscode/*
 
-test_algo_linux
-test_algo_mac
+scripts/test_algo_linux
+scripts/test_algo_mac
