@@ -131,7 +131,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         # If the turn is less than 5, stall with interceptors and wait to see enemy's base
         if game_state.turn_number < 5:
-            self.stall_with_interceptors(game_state)
+            self.stall_with_interceptors(game_state, 1)
         else:
             # Now let's analyze the enemy base to see where their defenses are concentrated.
             # If they have many units in the front we can build a line for our demolishers to attack them at long range.
