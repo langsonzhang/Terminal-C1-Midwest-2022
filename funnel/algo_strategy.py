@@ -10,7 +10,7 @@ Advanced strategy tips:
   board states. Though, we recommended making a copy of the map to preserve 
   the actual current map state.
 """
-
+import time
 
 import gamelib
 import random
@@ -151,7 +151,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         gamelib.debug_write('Performing turn {} of your custom algo strategy'.format(game_state.turn_number))
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
 
+        gamelib.util.debug_write("Starting " + str(game_state.turn_number))
+        start = time.time()
         self.starter_strategy(game_state)
+        gamelib.util.debug_write("Completed turn took " + str(time.time() - start))
 
         game_state.submit_turn()
 

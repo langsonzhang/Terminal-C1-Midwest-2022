@@ -48,20 +48,18 @@ class AttackStrategy:
 
         self.game_state = game_state
         self.config = config
-        gamelib.util.debug_write("Calculating opening side")
-        start = time.time()
+        gamelib.util.debug_write("Starting attack")
+        self.start = time.time()
         self.enemy_strong_side = self.predict_opening(game_state)
-        gamelib.util.debug_write("Calculation complete, took " + str(time.time()-start))
-
 
     def stall_with_interceptors(self):
         """
         Send out interceptors at random locations to defend our base from enemy moving units.
         """
         game_state = self.game_state
-        locations = [[4, 9], [23, 9], [7, 6], [20, 6]]
+        locations = [[4, 9], [23, 9]]
         for loc in locations:
-            game_state.attempt_spawn(INTERCEPTOR, locations)
+            game_state.attempt_spawn(INTERCEPTOR, loc, 1)
 
     def attack(self):
         game_state = self.game_state
@@ -70,10 +68,19 @@ class AttackStrategy:
         demos = []
         ints = []
         scouts = []
-        if turn_number < 15 and turn_number % 2 == 0:
+        if turn_number < 2:
+            self.stall_with_interceptors()
+        elif turn_number < 17 and turn_number % 2 == 0:
             self.try_ping_spam()
-        else:
-            self.try_predict_defense() or self.try_demo_attack_weak_side() or self.try_ping_spam()
+        elif turn_number > 17 and turn_number % 2 == 0:
+            if self.try_predict_defense():
+                pass
+            # elif game_state.get_resource(0, 1) < 3:
+            #     self.try_ping_spam() or self.try_demo_attack_weak_side()
+            else:
+                self.try_demo_attack_weak_side() or self.try_ping_spam()
+
+        gamelib.util.debug_write("Attack complete, took " + str(time.time() - self.start))
 
     def make_h_wall(self, start, length, orientation):
         for i in range(length):
@@ -99,6 +106,20 @@ class AttackStrategy:
         # Now just return the location that takes the least damage
         return location_options[damages.index(min(damages))]
 
+    def mini_demo_line(self, side):
+        game_state = self.game_state
+        gmap = game_state
+
+        wall_start = [23, 13] if side == 1 else [4, 13]
+
+        demo_start = l_wall_start if side == -1 else right_demo_start
+
+
+
+
+
+
+
     # predict the opening / attack side
     def predict_opening(self, game_state):
         """
@@ -106,8 +127,8 @@ class AttackStrategy:
         Returns -1 for left side, 1 for right side, and 0 if unknown/equally likely
         """
 
-        left_edges = [(13 - 2*i, 27 - 2*i) for i in range(7)]
-        right_edges = [(2*i + 14, 27 - 2*i) for i in range(7)]
+        left_edges = [(13 - i, 27 - i) for i in range(14)]
+        right_edges = [(i + 14, 27 - i) for i in range(14)]
 
         left_exit_side = 0
         right_exit_side = 0
@@ -182,7 +203,7 @@ class AttackStrategy:
         return 0
 
     def try_predict_defense(self) -> bool:
-        num_units  = 0
+        num_units = 0
         num_to_removed = 0
         for loc in self.game_state.game_map:
             for unit in self.game_state.game_map[loc] or []:
@@ -201,12 +222,14 @@ class AttackStrategy:
         elif open_side == 1:
             self.game_state.attempt_spawn(SCOUT, [15, 2], 1111)
             return True
-        return True
+        else:
+            self.game_state.attempt_spawn(SCOUT, [15, 2], 1111)
+            return True
 
     def try_demo_attack_weak_side(self) -> bool:
 
         def canKill(bb: BoundedBox, num_demos) -> bool:
-            multiplier = math.pow(1.1, num_demos) - 0.3
+            multiplier = math.pow(1.1, num_demos) - 0.5
             full_dmg = num_demos * 8 * (6 * 2) * multiplier
             if full_dmg > bb.get_total_hp():
                 return True
@@ -220,20 +243,27 @@ class AttackStrategy:
 
         lbox = BoundedBox([1, 17], [5, 14], gmap)
         rbox = BoundedBox([22, 17], [26, 14], gmap)
+        mbox = BoundedBox([5, 16], [22, 24], gmap)
 
         strong_side = 0
         num_demolisher = game_state.number_affordable(DEMOLISHER)
         if num_demolisher < 4:
             return False
 
+        left_start = [11, 2]
+        right_start = [16, 2]
+
+        if mbox.get_num_these_units([TURRET, WALL, SUPPORT]) > 7:
+            left_start, right_start = right_start, left_start
+
         if len(lbox.get_units(TURRET)) < len(rbox.get_units(TURRET)) and canKill(lbox, num_demolisher):
             game_state.attempt_spawn(WALL, [[5, 12], [23, 11]])
             game_state.attempt_remove([[5, 12], [23, 11]])
-            game_state.attempt_spawn(DEMOLISHER, [11, 2], 1000)
+            game_state.attempt_spawn(DEMOLISHER, left_start, 1000)
         elif canKill(rbox, num_demolisher):
             game_state.attempt_spawn(WALL, [[22, 12], [4, 11]])
             game_state.attempt_remove([[22, 12], [4, 11]])
-            game_state.attempt_spawn(DEMOLISHER, [16, 2], 1000)
+            game_state.attempt_spawn(DEMOLISHER, right_start, 1000)
 
         return True
 
@@ -255,14 +285,21 @@ class AttackStrategy:
 
         open_side = self.enemy_strong_side
 
+        right_sups = [[16+x, 5+x] for x in range(0, 4)]
+        left_sups = [[11-x, 5+x] for x in range(0, 4)]
+
         if open_side == -1 and can_survive(lbox, num_pings):
-            game_state.attempt_spawn(SCOUT, [11, 2], 1111)
+            game_state.attempt_spawn(SCOUT, [16, 2], 1111)
+            game_state.attempt_spawn(SUPPORT, left_sups)
+            game_state.attempt_remove(left_sups)
             return True
         elif open_side == 1 and can_survive(rbox, num_pings):
-            game_state.attempt_spawn(SCOUT, [15, 2], 1111)
+            game_state.attempt_spawn(SCOUT, [11, 2], 1111)
+            game_state.attempt_spawn(SUPPORT, right_sups)
+            game_state.attempt_remove(right_sups)
             return True
         elif open_side == 0:
-            game_state.attempt_spawn(SCOUT, [15, 2], 1111)
+            game_state.attempt_spawn(SCOUT, [16, 2], 1111)
             return True
 
         return False

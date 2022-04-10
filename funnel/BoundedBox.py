@@ -41,6 +41,15 @@ class BoundedBox():
                         total += 1
         return total
 
+    def get_num_these_units(self, unit_representation) -> int:
+        total: int = 0
+        for row in range(self.BR[1], self.TL[1]):
+            for col in range(self.TL[0], self.BR[0]):
+                for unit in self.gmap[col, row] or []:
+                    if unit.unit_type in unit_representation:
+                        total += 1
+        return total
+
     # returns the position of the lowest turret on the enemy's side within this BB
     def get_lowest_unit(self, unit_representation) -> [int, int]:
         for row in range(self.BR[1], self.TL[1]):
