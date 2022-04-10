@@ -104,7 +104,6 @@ class AlgoStrategy(gamelib.AlgoCore):
                 support_locations = [[13, 2], [14, 2], [13, 3], [14, 3]]
                 game_state.attempt_spawn(SUPPORT, support_locations)
 
-
     def repair_defences(self, game_state):
         """
         Find broken walls and turrets, and replace with lvl 1.
@@ -278,7 +277,6 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         # Keep the right 2 walls as optional
         game_state.attempt_remove(((26, 13), (27, 13)))
-
 
     def build_reactive_defense(self, game_state):
         """

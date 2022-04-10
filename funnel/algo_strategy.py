@@ -19,7 +19,7 @@ import warnings
 from sys import maxsize, stderr
 import json
 from collections import OrderedDict
-
+from heapq import heappush, heappop
 
 class AlgoStrategy(gamelib.AlgoCore):
     def __init__(self):
@@ -233,7 +233,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         supports_loc = []
         to_upgrade = []
 
-        if turn_number <= 1:
+        if turn_number >= 0:
             turrets_1 = ((1, 12), (21, 10), (22, 11), (24, 12))
             walls_1 = ((0, 13), (26, 13), (27, 13), (2, 11), (3, 10), (4, 9), (20, 9), (5, 8), (19, 8), (6, 7), (8, 7), (9, 7), (10, 7), (11, 7), (12, 7), (13, 7), (14, 7), (15, 7), (16, 7), (17, 7), (18, 7), (7, 6))
 
@@ -243,7 +243,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             map(add_expected_turret, turrets_1)
             map(add_expected_walls, walls_1)
 
-        if turn_number <= 2:
+        if turn_number >= 1:
             walls_2 = ((24, 13),)
             upgrade_2 = ((24, 12),)
 
@@ -254,7 +254,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             map(add_expected_walls, walls_2)
             map(mark_upgraded, upgrade_2)
 
-        if turn_number <= 3:
+        if turn_number >= 2:
             walls_3 = ((22, 12),)
             upgrade_3 = ((1, 12),)
 
@@ -266,7 +266,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         # TODO: Leaving RHS wall open at this turn
 
-        if turn_number <= 4:            # upgrade walls in front of LHS and funnel turret
+        if turn_number >= 3:            # upgrade walls in front of LHS and funnel turret
             walls_4 = ((1, 13),)
             upgrade_4 = ((22, 12), (1, 13))
 
@@ -277,7 +277,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             map(mark_upgraded, upgrade_4)
 
 
-        if turn_number <= 5:
+        if turn_number >= 4:
             turret_5 = ((24, 10),)
             walls_5 = ((25, 13), (2, 13), (2, 12))
 
@@ -287,13 +287,13 @@ class AlgoStrategy(gamelib.AlgoCore):
             map(add_expected_turret, turret_5)
             map(add_expected_walls, walls_5)
         
-        if turn_number <= 6:
+        if turn_number >= 5:
             turret_6 = ((22, 10),)
             turrets_loc.extend(turret_6)
             map(add_expected_turret, turret_6)
 
         # MID-LATE Game?
-        if turn_number >= 7:        
+        if turn_number >= 6:        
             # Upgrade in order of priority
             upgrade_7 = (
                 (24, 13), (25, 13),                         # upgrade walls at the right funnel
@@ -318,7 +318,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             # We don't mark it as upgraded, so when repairing, we don't prioritize its upgrade                
 
 
-        # Turn 1 Turrets & Walls\
+        # Turn 1 Turrets & Walls
         print(turrets_loc, file=stderr)
         game_state.attempt_spawn(TURRET, turrets_loc)
         game_state.attempt_spawn(WALL, walls_loc)
@@ -486,19 +486,6 @@ class AlgoStrategy(gamelib.AlgoCore):
                 self.scored_on_locations.add(tuple(location))
                 gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
         
-
-        # TODO: Review this
-        # Try to see where our wall was destroyed to repair...
-        # deaths = events["breach"]
-        # walls_to_repair = {}
-        # wall = WALL
-
-        # def add_wall_to_repair(death):
-        #     if (death[3] == 1) and (death[1] == wall) and (not death[4]):
-        #         walls_to_repair[tuple(death[0])] = None
-        # map(add_wall_to_repair, deaths)
-        # self.p1_walls_to_repair.update(walls_to_repair)
-            
         
         # # Find all enemy support locations and their level
         # shields = events["shield"]
