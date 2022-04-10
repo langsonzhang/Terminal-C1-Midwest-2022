@@ -39,7 +39,7 @@ class AttackMethod:
         structures = self.get_required_structures(game_state)
         cost = 0
         new_structs = []
-        for x, y, struct_type in structure:
+        for x, y, struct_type in structures:
             if not game_state.contains_stationary_unit((x, y)):
                 cost += game_state.type_cost(struct_type)
                 new_structs.append((x, y, struct_type))
