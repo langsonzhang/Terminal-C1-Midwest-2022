@@ -56,6 +56,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         # Walls/turrets should we have at any point
         self.P1_WALLS_EXPECTED = {}
+        self.P1_WALLS_OPTIONAL = {}
         self.P1_TURRET_EXPECTED = {}
 
         # For efficient look-up of SPAWN EDGES
@@ -113,21 +114,29 @@ class AlgoStrategy(gamelib.AlgoCore):
         Returns None if attack is infeasible or too weak given current resources
         """
         # Check if any of the holes are blocked
+        optional_walls = self.P1_WALLS_OPTIONAL.keys()
+        min_bank = game_state.type_cost(WALL)[game_state.SP] * len(optional_walls)
         holes = method.get_holes(game_state)
         for hole in holes:
             if game_state.contains_stationary_unit(hole):
+                gamelib.debug_write("Hole blocked!")
                 return None
+            if hole in optional_walls:
+                min_bank -= game_state.type_cost(WALL)[game_state.SP]
 
-        new_structs = method.get_new_structures(game_state)
+
+        new_structs = method.get_new_structures(game_state, min_bank)
 
         # method returns None if we cannot afford all new structures
         if new_structs is None:
+            gamelib.debug_write("Can't afford structures!")
             return None
 
         spawns = method.get_spawns(game_state, self.total_support)
 
         # spawns is empty if we cannot afford a strong enough push
         if not spawns:
+            gamelib.debug_write("Can't afford push!")
             return None
 
         return spawns
@@ -135,7 +144,7 @@ class AlgoStrategy(gamelib.AlgoCore):
     def perform_attack(self, game_state, method, spawns):
         method.place_structures(game_state)
         for x, y, unit_type, num in spawns:
-            game_state.attempt_spawn(unit_type, (x, y), num)
+            result = game_state.attempt_spawn(unit_type, [[x, y]], num)
 
     def on_turn(self, turn_state):
         """
@@ -255,23 +264,36 @@ class AlgoStrategy(gamelib.AlgoCore):
             # First, place basic defenses
             self.build_defences(game_state)
 
-            # If the turn is less than 5, stall with interceptors and wait to see enemy's base
+            holes = set()
             if game_state.turn_number < 5:
                 self.stall_with_interceptors(game_state, 1)
             else:
                 if game_state.turn_number % 2 == 1:
-                    spawn = random.choice([[12, 1], [14, 0]])
-                    unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
-                    game_state.attempt_spawn(unit, spawn, 1000)
+                    # spawn = random.choice([[12, 1], [14, 0]])
+                    # unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
+                    # game_state.attempt_spawn(unit, spawn, 1000)
 
-                # Lastly, if we have spare SP, let's build some supports
-                self.create_endgame_supports(game_state, support_right)
+                    spawns = self.get_attack_spawns(game_state, self.corner_ping_attack)
+                    if spawns is not None:
+                        holes = self.corner_ping_attack.get_holes(game_state)
+                        self.perform_attack(game_state, self.corner_ping_attack, spawns)
+
+            self.patch_optional_walls(game_state, holes)
+
+            # Lastly, if we have spare SP, let's build some supports
+            self.create_endgame_supports(game_state, support_right)
         else:
             defense = AltDefense(game_state, self.config)
             defense.build_defences()
 
             attack = AttackStrategy(game_state, self.config)
             attack.attack()
+
+    def patch_optional_walls(self, game_state, holes):
+        for wall in list(self.P1_WALLS_OPTIONAL.keys()):
+            if wall not in holes:
+                game_state.attempt_spawn(WALL, wall)
+                game_state.attempt_remove(wall)
 
     def repair_defences(self, game_state):
         """
@@ -296,6 +318,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         cost = {wall: game_state.type_cost(WALL), turret: game_state.type_cost(TURRET)}
 
         walls_to_check = list(self.P1_WALLS_EXPECTED.keys())
+
         turrets_to_check = list(self.P1_TURRET_EXPECTED.keys())
         
         # ==ASSESS==:
@@ -357,13 +380,16 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         if turn_number >= 0:
             turrets_0 = ((1, 12), (21, 10), (22, 11), (24, 12))
-            walls_0 = ((0, 13), (26, 13), (27, 13), (2, 11), (3, 10), (4, 9), (20, 9), (5, 8), (19, 8), (6, 7), (8, 7), (9, 7), (10, 7), (11, 7), (12, 7), (13, 7), (14, 7), (15, 7), (16, 7), (17, 7), (18, 7), (7, 6))
+            walls_0 = ((0, 13), (2, 11), (3, 10), (4, 9), (20, 9), (5, 8), (19, 8), (6, 7), (8, 7), (9, 7), (10, 7), (11, 7), (12, 7), (13, 7), (14, 7), (15, 7), (16, 7), (17, 7), (18, 7), (7, 6))
+            walls_0_optional = ((26, 13), (27, 13))
 
             turrets_loc.extend(turrets_0)
             walls_loc.extend(walls_0)
+            #walls_loc_optional.extend(walls_0_optional)
 
             self.P1_TURRET_EXPECTED.update({loc: 1 for loc in turrets_0})
             self.P1_WALLS_EXPECTED.update({loc: 1 for loc in walls_0})
+            self.P1_WALLS_OPTIONAL.update({loc: 1 for loc in walls_0_optional})
 
         if turn_number >= 1:
             walls_1 = ((24, 13),)
