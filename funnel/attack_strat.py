@@ -1,4 +1,5 @@
 import math
+import time
 from heapq import heappush, heappop
 from random import random
 
@@ -47,9 +48,11 @@ class AttackStrategy:
 
         self.game_state = game_state
         self.config = config
-        gamelib.util.debug_write("Calculated opening side")
+        gamelib.util.debug_write("Calculating opening side")
+        start = time.time()
         self.enemy_strong_side = self.predict_opening(game_state)
-        gamelib.util.debug_write("Calculation complete")
+        gamelib.util.debug_write("Calculation complete, took " + str(time.time()-start))
+
 
     def stall_with_interceptors(self):
         """
