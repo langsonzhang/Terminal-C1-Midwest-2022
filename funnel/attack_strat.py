@@ -62,31 +62,12 @@ class AttackStrategy:
         demos = []
         ints = []
         scouts = []
-        if turn_number in range(0, 4):
-            game_state.attempt_spawn(INTERCEPTOR, start_ints)
+        if turn_number < 5:
+            self.try_ping_spam()
         else:
-            # Only spawn Scouts every other turn
-            # Sending more at once is better since attacks can only hit a single scout at a time
-            if turn_number % 3 == 1:
-                # To simplify we will just check sending them from back left and right
-                scout_spawn_location_options = [[13, 0], [14, 0]]
-                best_location = self.least_damage_spawn_location(game_state, scout_spawn_location_options)
-                game_state.attempt_spawn(SCOUT, best_location, 1000)
-            elif game_state.get_resource(1, 0) >= 12:
-                start_pos = l_back_demo
-                # box = BoundedBox([5, 19], [22, 16], game_state.game_map)
-                # lowest_tur = box.get_lowest_unit(TURRET)
-                # if lowest_tur:
-                #     self.make_h_wall([23, 13], 5, -1)
-                # if game_state.get_target_edge(start_pos) == game_state.game_map.TOP_LEFT:
-                #     start_pos = left_demo_start
-                #     game_state.attempt_spawn(WALL, ltr_demo_walls)
-                #     game_state.attempt_remove(ltr_demo_walls)
-                game_state.attempt_spawn(DEMOLISHER, start_pos, 1000)
+            self.try_demo_attack_weak_side()
 
-            # Lastly, if we have spare SP, let's build some supports
-            support_locations = [[13, 2], [14, 2], [13, 3], [14, 3]]
-            game_state.attempt_spawn(SUPPORT, support_locations)
+
 
     def make_h_wall(self, start, length, orientation):
         for i in range(length):
@@ -194,7 +175,42 @@ class AttackStrategy:
         return 0
 
 
-    def demo_attack_weak_side(self):
+    def try_demo_attack_weak_side(self):
+
+        def canKill(bb: BoundedBox, num_demos) -> bool:
+            full_dmg = num_demos*8*(6*2)
+            if full_dmg > bb.get_total_hp():
+                return True
+            return False
+
+        game_state = self.game_state
+        gmap = game_state.game_map
+
+        if game_state.get_resource(0, 0) < 3:
+            return
+
+        lbox = BoundedBox([1, 17], [5, 14], gmap)
+        rbox = BoundedBox([22, 17], [26, 14], gmap)
+
+        strong_side = 0
+        num_demolisher = game_state.number_affordable(DEMOLISHER)
+
+        if len(lbox.get_units(TURRET)) < len(rbox.get_units(TURRET) and canKill(lbox)):
+            game_state.attempt_spawn(WALL, [[5, 12], [5, 13], [23, 11]])
+            game_state.attempt_remove([[5, 12], [5, 13], [23, 11]])
+            game_state.attempt_spawn(DEMOLISHER, [15, 2], 111111)
+        elif canKill(rbox):
+            game_state.attempt_spawn(WALL, [[22, 12], [22, 13], [4, 11]])
+            game_state.attempt_remove([[22, 12], [22, 13], [4, 11]])
+            game_state.attempt_spawn(DEMOLISHER, [11, 2], 111111)
+
+    def try_ping_spam(self):
+        def can_survive(bb: BoundedBox, num_pings):
+            turs = bb.get_units(TURRET)
+            dmg = 0
+            for tur in turs:
+                dmg += tur.damage_i
+            return dmg*6 < (25*num_pings)
 
         game_state = self.game_state
         gmap = game_state.game_map
@@ -202,21 +218,15 @@ class AttackStrategy:
         lbox = BoundedBox([1, 17], [5, 14], gmap)
         rbox = BoundedBox([22, 17], [26, 14], gmap)
 
-        strong_side = 0
+        num_pings = game_state.number_affordable(SCOUT)
 
-        if len(lbox.get_units(TURRET)) > len(rbox.get_units(TURRET)):
-            strong_side = -1
-        else:
-            strong_side = 1
+        open_side = self.predict_opening(self.game_state)
 
-        
+        if open_side == -1 and can_survive(lbox, num_pings):
+            game_state.attempt_spawn(SCOUT, [11, 2], 111111)
+        elif open_side == 1 and can_survive(rbox, num_pings):
+            game_state.attempt_spawn(SCOUT, [15, 2], 111111)
 
-
-
-        # start opposite side
-        start_location = left_demo_start
-        if strong_side == 1:
-            start_location = right_demo_start
 
 
 def clamp(num, lower, upper) -> int:

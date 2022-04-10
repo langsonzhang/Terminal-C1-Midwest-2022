@@ -249,7 +249,8 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         # TODO: Repair phase
         self.repair_defences(game_state)
-        
+
+        alt_defense = True
         if not alt_defense:
             # First, place basic defenses
             self.build_defences(game_state)

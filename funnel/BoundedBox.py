@@ -65,6 +65,15 @@ class BoundedBox():
                         ret.append(unit)
         return ret
 
+    def get_total_hp(self):
+        ret = 0
+        for row in range(self.BR[1], self.TL[1]):
+            for col in range(self.TL[0], self.BR[0]):
+                for unit in self.gmap[col, row] or []:
+                    ret += unit.health
+        return ret
+
+
 
 #––––––––––––––––––––––– UNIT TESTS ––––––––––––––––––––––––––––––––––––––
 
