@@ -723,7 +723,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             
             self.P1_SUPPORT_EXPECTED.add(loc)
             self.total_support += 1
-
+            
     def remove_walls_lvl1(self, game_state):
         """Removes level 1 walls."""
         wall = WALL
