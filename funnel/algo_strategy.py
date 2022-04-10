@@ -265,7 +265,6 @@ class AlgoStrategy(gamelib.AlgoCore):
                 #     pass
                 # else:
                 # They don't have many units in the front so lets figure out their least defended area and send Scouts there.
-
                 # Only spawn Scouts every other turn
                 # Sending more at once is better since attacks can only hit a single scout at a time
                 if game_state.turn_number % 2 == 1:
@@ -343,7 +342,17 @@ class AlgoStrategy(gamelib.AlgoCore):
         if len(to_replace) != 0:
             game_state.attempt_remove(to_replace)
 
-    def build_defences(self, game_state):
+
+    def assign_upgraded(self, locations):
+        """Update expected walls/turrets to be upgraded."""
+        for loc in locations:
+            if loc in self.P1_WALLS_EXPECTED:
+                self.P1_WALLS_EXPECTED[loc] = 2
+            else:
+                self.P1_TURRET_EXPECTED[loc] = 2
+
+
+    def build_defences(self, game_state, block_right=False):
         """
         Build basic defenses using hardcoded locations.
         Remember to defend corners and avoid placing units in the front where enemy demolishers can attack them.
@@ -378,11 +387,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             to_upgrade.extend(upgrade_1)        # RHS vs. LHS (1, 12) first
 
             self.P1_WALLS_EXPECTED.update({loc: 1 for loc in walls_1})
-            for loc in upgrade_1:
-                if loc in self.P1_WALLS_EXPECTED:
-                    self.P1_WALLS_EXPECTED[loc] = 2
-                else:
-                    self.P1_TURRET_EXPECTED[loc] = 2
+            self.assign_upgraded(upgrade_1)
 
         if turn_number >= 2:
             walls_2 = ((22, 12),)
@@ -395,11 +400,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             to_upgrade.extend(upgrade_2)            # upgrade LHS turret
 
             self.P1_WALLS_EXPECTED.update({loc: 1 for loc in walls_2})
-            for loc in upgrade_2:
-                if loc in self.P1_WALLS_EXPECTED:
-                    self.P1_WALLS_EXPECTED[loc] = 2
-                else:
-                    self.P1_TURRET_EXPECTED[loc] = 2
+            self.assign_upgraded(upgrade_2)
 
         # TODO: Leaving RHS wall open at this turn
 
@@ -411,11 +412,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             to_upgrade.extend(upgrade_3)
 
             self.P1_WALLS_EXPECTED.update({loc: 1 for loc in walls_3})
-            for loc in upgrade_3:
-                if loc in self.P1_WALLS_EXPECTED:
-                    self.P1_WALLS_EXPECTED[loc] = 2
-                else:
-                    self.P1_TURRET_EXPECTED[loc] = 2
+            self.assign_upgraded(upgrade_3)
 
 
         if turn_number >= 4:
@@ -441,18 +438,29 @@ class AlgoStrategy(gamelib.AlgoCore):
                 (22, 11), (24, 10),                         # upgrade 2 important RHS turrets
                 (0, 13), (2, 13), (2, 12), (2, 11),         # upgrade walls at the LHS
                 (21, 10), (22, 10),                         # upgrade last 2 RHS turrets
-                (3, 10)     # upgrade last wall on the LHS for extra defense
+                (3, 10),     # upgrade last wall on the LHS for extra defense
             )
             # TODO: Might need to edit attempt_upgrade to stop if it can't purchase the next one?
             
             # TODO: Might need to decide between support vs buffing defense?
             to_upgrade.extend(upgrade_6)
-            for loc in upgrade_6:
-                if loc in self.P1_WALLS_EXPECTED:
-                    self.P1_WALLS_EXPECTED[loc] = 2
-                else:
-                    self.P1_TURRET_EXPECTED[loc] = 2
+            self.assign_upgraded(upgrade_6)
         
+        if block_right:
+            if turn_number >= 9:
+                upgrade_9 = ((27, 13), (26,13))
+                turret_9 = ((26, 12), (25, 12))
+
+                to_upgrade.extend(upgrade_9)
+                self.assign_upgraded(upgrade_9)
+                self.P1_TURRET_EXPECTED.update({loc: 1 for loc in turret_9})
+
+        
+            if turn_number >= 10:
+                upgrade_10 = ((26, 12), (25, 12))
+                to_upgrade.extend(upgrade_10)
+                self.assign_upgraded(upgrade_10)
+
         # TODO: Add turn threshold to start adding support?
         if turn_number >= 12:
             support_12 = ((21, 9), (20, 8), (19, 7))
@@ -461,7 +469,6 @@ class AlgoStrategy(gamelib.AlgoCore):
             supports_loc.extend(support_12)
             to_upgrade.extend(upgrade_12)
             # We don't mark it as upgraded, so when repairing, we don't prioritize its upgrade
-
 
         # Turn 1 Turrets & Walls
         game_state.attempt_spawn(TURRET, turrets_loc)
@@ -475,7 +482,8 @@ class AlgoStrategy(gamelib.AlgoCore):
             game_state.attempt_upgrade(supports_loc)
 
         # Keep the right 2 walls as optional
-        game_state.attempt_remove(((26, 13), (27, 13)))
+        if not block_right:
+            game_state.attempt_remove(((26, 13), (27, 13)))
         
     def build_reactive_defense(self, game_state):
         """
@@ -626,20 +634,6 @@ class AlgoStrategy(gamelib.AlgoCore):
                 gamelib.debug_write("Got scored on at: {}".format(location))
                 self.scored_on_locations.add(tuple(location))
                 gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
-        
-        
-        # # Find all enemy support locations and their level
-        # shields = events["shield"]
-        # support_locations = {}
-
-        # def find_enemy_support(shield):
-        #     """Given a shielding event, get the enemy support's location."""
-        #     if shield[6] == 2:
-        #         location = tuple(shield[0])
-        #         lvl = 1 if shield[2] == 3 else 2
-        #         support_locations[location] = lvl
-        # map(find_enemy_support, shields)
-        # self.p2_support_locations.update(support_locations)
 
 
     # HELPER FUNCTIONS
@@ -656,7 +650,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         support_cost = game_state.type_cost(SUPPORT)[0]
 
-        right_facing_supports = [(8, 6), (9, 6), (10, 6), (11, 6), (12, 6), (13, 6), (14, 6), (15, 6), (16, 6), (17, 6), (18, 6), (8, 5), (9, 5), (10, 5), (9, 4), (10, 4), (12, 4), (13, 4), (14, 4), (15, 4), (16, 4), (17, 4), (18, 4), (10, 3), (12, 3), (13, 3), (14, 3), (15, 3), (16, 3), (17, 3), (13, 2), (14, 2), (15, 2), (16, 2), (13, 1), (14, 1), (15, 1), (13, 0), (14, 0)]
+        right_facing_supports = [(15, 1), (14, 1), (16, 2), (15, 2), (14, 2), (13, 2), (17, 3), (16, 3), (15, 3), (14, 3), (13, 3), (12, 3), (17, 5), (16, 5), (15, 5), (14, 5), (13, 5), (12, 5), (11, 5), (18, 6), (17, 6), (16, 6), (15, 6), (14, 6), (13, 6), (12, 6), (11, 6), (10, 6)]
         left_facing_supports = [(27 - loc[0], loc[1]) for loc in right_facing_supports]
         supports_loc = right_facing_supports if support_right else left_facing_supports
 
