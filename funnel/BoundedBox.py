@@ -9,10 +9,8 @@ import gamelib.util as util
 
 
 class BoundedBox():
-
     TL: [int, int]
     BR: [int, int]
-
 
     # !!!! DO NOT MUTATE THIS MAP IF ITS FROM game_state !!!!
     gmap: GameMap
@@ -74,12 +72,11 @@ class BoundedBox():
         return ret
 
 
-
-#––––––––––––––––––––––– UNIT TESTS ––––––––––––––––––––––––––––––––––––––
+# ––––––––––––––––––––––– UNIT TESTS ––––––––––––––––––––––––––––––––––––––
 
 box = BoundedBox([5, 100], [100, 5], GameMap({}))
-assert(box.get_area() == 95 * 95)
-assert(box.get_density("sdlkfj") == 0)
+assert (box.get_area() == 95 * 95)
+assert (box.get_density("sdlkfj") == 0)
 # assert(box.get_density(None) > 0.9)
 box.get_units("sdf")
 box.get_lowest_unit("sdf")

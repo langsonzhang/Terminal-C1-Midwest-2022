@@ -41,8 +41,7 @@ class AltDefense:
                   [21, 9], [7, 8], [20, 8], [8, 7], [19, 7], [9, 6], [18, 6], [10, 5], [17, 5], [11, 4], [16, 4],
                   [12, 3], [13, 3], [14, 3], [15, 3]]
         basic_v = [[0, 13], [1, 13], [2, 13], [25, 13], [26, 13], [27, 13], [3, 12], [24, 12], [5, 11], [22, 11],
-                   [6, 9],
-                   [7, 8], [8, 7], [9, 6], [10, 5], [11, 5], [12, 5], [13, 5], [14, 5]]
+                   [6, 9], [7, 8], [8, 7], [9, 6], [10, 5], [11, 4], [12, 3], [13, 3], [14, 3], [15, 3]]
         lr_turs = [[2, 12], [25, 12], [5, 10], [22, 10]]
 
         frontier_walls = [[0, 13], [1, 13], [2, 13], [25, 13], [26, 13], [27, 13], [3, 12], [24, 12], [5, 11], [22, 11]]
@@ -52,6 +51,7 @@ class AltDefense:
                       [21, 10], [22, 10], [20, 9]]
 
         middle_supports = [[9, 7], [10, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [17, 7], [18, 7]]
+        middle2_supports = [[x, 6] for x in range(10, 18)]
 
         if turn_number == 0:
             # basic V shape
@@ -74,11 +74,20 @@ class AltDefense:
         else:
             walls = full_v + frontier_walls
             turs = lr_turs + final_turs
-            for i in range(int(game_state.get_resource(0, 0) / 8)):
-                sups.append(middle_supports.pop())
             upgrades = turs + frontier_walls + sups
 
         game_state.attempt_spawn(TURRET, turs)
         game_state.attempt_spawn(WALL, walls)
-        game_state.attempt_spawn(SUPPORT, sups)
         game_state.attempt_upgrade(upgrades)
+        for i in range(int(game_state.get_resource(0, 0) / 8)):
+            if middle_supports:
+                sups.append(middle_supports.pop())
+        game_state.attempt_spawn(SUPPORT, sups)
+        game_state.attempt_upgrade(sups)
+
+        while game_state.get_resource(0, 0) > 50:
+            if middle2_supports:
+                coord = middle2_supports.pop()
+                game_state.attempt_spawn(SUPPORT, coord)
+                game_state.attempt_upgrade(coord)
+

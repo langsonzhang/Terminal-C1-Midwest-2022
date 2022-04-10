@@ -26,6 +26,9 @@ from build_alt_defenses import AltDefense
 from attack_strat import AttackStrategy
 
 class AlgoStrategy(gamelib.AlgoCore):
+
+
+
     def __init__(self):
         super().__init__()
         seed = random.randrange(maxsize)
@@ -277,11 +280,11 @@ class AlgoStrategy(gamelib.AlgoCore):
                 # Lastly, if we have spare SP, let's build some supports
                 self.create_endgame_supports(game_state, support_right)
         else:
-            defense = AltDefense(game_state, self.config)
-            defense.build_defences()
-
             attack = AttackStrategy(game_state, self.config)
             attack.attack()
+
+            defense = AltDefense(game_state, self.config)
+            defense.build_defences()
             
 
     def repair_defences(self, game_state):
