@@ -68,19 +68,26 @@ class AttackStrategy:
         demos = []
         ints = []
         scouts = []
+
         if turn_number < 2:
-            self.stall_with_interceptors()
-        elif turn_number < 17 and turn_number % 2 == 0:
-            self.try_ping_spam()
-        elif turn_number > 17 and turn_number % 2 == 0:
+            self.try_demo_line() or self.stall_with_interceptors()
+        # elif turn_number < 17 and turn_number % 4 == 0:
+        #     # self.try_ping_spam()
+        #     self.try_demo_attack_weak_side()
+        elif turn_number % 3 == 0:
             if self.try_predict_defense():
                 pass
             # elif game_state.get_resource(0, 1) < 3:
             #     self.try_ping_spam() or self.try_demo_attack_weak_side()
             else:
-                self.try_demo_attack_weak_side() or self.try_ping_spam()
+                self.try_demo_attack_weak_side() or self.try_mini_demo_line(self.enemy_strong_side) or self.try_ping_spam()
 
         gamelib.util.debug_write("Attack complete, took " + str(time.time() - self.start))
+
+    def try_demo_line(self):
+        box = BoundedBox([5, 16], [22, 14], self.game_state.game_map)
+        if box.get_num_these_units([TURRET, WALL, SUPPORT]) > 8:
+            return self.try_mini_demo_line(0-self.enemy_strong_side)
 
     def make_h_wall(self, start, length, orientation):
         for i in range(length):
@@ -106,19 +113,27 @@ class AttackStrategy:
         # Now just return the location that takes the least damage
         return location_options[damages.index(min(damages))]
 
-    def mini_demo_line(self, side):
+    def try_mini_demo_line(self, side) -> bool:
         game_state = self.game_state
-        gmap = game_state
+        gmap = game_state.game_map
+
+        wall_start = [23, 13] if side == 1 else [4, 13]
+        # danger = [24, 15] if side == 1 else [3, 15]
+
+        box = BoundedBox([20, 15], [23, 14], gmap) if side == 1 else BoundedBox([4, 16], [7, 14], gmap)
+        if box.get_num_units(TURRET) > 10:
+            return False;
 
         wall_start = [23, 13] if side == 1 else [4, 13]
 
-        demo_start = l_wall_start if side == -1 else right_demo_start
+        demo_start = right_demo_start if side == 1 else left_demo_start
 
-
-
-
-
-
+        if game_state.get_resource(0, 0) < 1:
+            return False
+        game_state.attempt_spawn(WALL, wall_start, 1)
+        game_state.attempt_remove(wall_start)
+        game_state.attempt_spawn(DEMOLISHER, demo_start, 33)
+        return True
 
     # predict the opening / attack side
     def predict_opening(self, game_state):
@@ -211,7 +226,7 @@ class AttackStrategy:
                 if unit.pending_removal:
                     num_to_removed += 1
 
-        if num_to_removed < 0.4*num_units:
+        if num_to_removed < 0.4 * num_units:
             return False
 
         open_side = self.enemy_strong_side
@@ -229,8 +244,8 @@ class AttackStrategy:
     def try_demo_attack_weak_side(self) -> bool:
 
         def canKill(bb: BoundedBox, num_demos) -> bool:
-            multiplier = math.pow(1.1, num_demos) - 0.5
-            full_dmg = num_demos * 8 * (6 * 2) * multiplier
+            # multiplier = math.pow(1.1, num_demos) - 0.5
+            full_dmg = num_demos * 7 * (5 * 2) * 1
             if full_dmg > bb.get_total_hp():
                 return True
             return False
@@ -243,26 +258,33 @@ class AttackStrategy:
 
         lbox = BoundedBox([1, 17], [5, 14], gmap)
         rbox = BoundedBox([22, 17], [26, 14], gmap)
-        mbox = BoundedBox([5, 16], [22, 24], gmap)
+        mbox = BoundedBox([5, 16], [22, 14], gmap)
 
         strong_side = 0
         num_demolisher = game_state.number_affordable(DEMOLISHER)
         if num_demolisher < 4:
             return False
 
-        left_start = [11, 2]
-        right_start = [16, 2]
+        ls = [11, 2]
+        rs = [16, 2]
 
-        if mbox.get_num_these_units([TURRET, WALL, SUPPORT]) > 7:
-            left_start, right_start = right_start, left_start
+        left_start = ls
+        right_start = rs
+
+        if mbox.get_num_these_units([TURRET, WALL, SUPPORT]) < 7:
+            left_start, right_start = rs, ls
 
         if len(lbox.get_units(TURRET)) < len(rbox.get_units(TURRET)) and canKill(lbox, num_demolisher):
-            game_state.attempt_spawn(WALL, [[5, 12], [23, 11]])
-            game_state.attempt_remove([[5, 12], [23, 11]])
+            if lbox.get_num_units(TURRET) <= 2 and lbox.get_num_these_units([WALL, SUPPORT]) > 8:
+                left_start = rs
+            game_state.attempt_spawn(WALL, [[5, 12], [5, 13], [23, 11]])
+            game_state.attempt_remove([[5, 12], [5, 13], [23, 11]])
             game_state.attempt_spawn(DEMOLISHER, left_start, 1000)
         elif canKill(rbox, num_demolisher):
-            game_state.attempt_spawn(WALL, [[22, 12], [4, 11]])
-            game_state.attempt_remove([[22, 12], [4, 11]])
+            if rbox.get_num_units(TURRET) <= 2 and rbox.get_num_these_units([WALL, SUPPORT]) > 8:
+                right_start = ls
+            game_state.attempt_spawn(WALL, [[22, 12], [22, 13], [4, 11]])
+            game_state.attempt_remove([[5, 12], [5, 13], [4, 11]])
             game_state.attempt_spawn(DEMOLISHER, right_start, 1000)
 
         return True
@@ -285,8 +307,8 @@ class AttackStrategy:
 
         open_side = self.enemy_strong_side
 
-        right_sups = [[16+x, 5+x] for x in range(0, 4)]
-        left_sups = [[11-x, 5+x] for x in range(0, 4)]
+        right_sups = [[16 + x, 5 + x] for x in range(0, 4)]
+        left_sups = [[11 - x, 5 + x] for x in range(0, 4)]
 
         if open_side == -1 and can_survive(lbox, num_pings):
             game_state.attempt_spawn(SCOUT, [16, 2], 1111)
@@ -297,9 +319,6 @@ class AttackStrategy:
             game_state.attempt_spawn(SCOUT, [11, 2], 1111)
             game_state.attempt_spawn(SUPPORT, right_sups)
             game_state.attempt_remove(right_sups)
-            return True
-        elif open_side == 0:
-            game_state.attempt_spawn(SCOUT, [16, 2], 1111)
             return True
 
         return False
