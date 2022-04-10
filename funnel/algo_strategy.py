@@ -25,6 +25,7 @@ from attack_method import CornerPing, init_attack_method_globals
 from build_alt_defenses import AltDefense
 from attack_strat import AttackStrategy
 
+
 class AlgoStrategy(gamelib.AlgoCore):
     def __init__(self):
         super().__init__()
@@ -258,18 +259,8 @@ class AlgoStrategy(gamelib.AlgoCore):
             if game_state.turn_number < 5:
                 self.stall_with_interceptors(game_state, 1)
             else:
-                # Now let's analyze the enemy base to see where their defenses are concentrated.
-                # If they have many units in the front we can build a line for our demolishers to attack them at long range.
-                # if self.detect_enemy_unit(game_state, unit_type=None, valid_x=None, valid_y=[14, 15]) > 10:
-                #     # self.demolisher_line_strategy(game_state)
-                #     pass
-                # else:
-                # They don't have many units in the front so lets figure out their least defended area and send Scouts there.
-                # Only spawn Scouts every other turn
-                # Sending more at once is better since attacks can only hit a single scout at a time
                 if game_state.turn_number % 2 == 1:
-                    # spawn = [12, 1] if support_right else [15, 1]
-                    spawn = random.choice([(12, 1), (15, 1)])
+                    spawn = random.choice([[12, 1], [14, 0]])
                     unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
                     game_state.attempt_spawn(unit, spawn, 1000)
 
@@ -281,7 +272,6 @@ class AlgoStrategy(gamelib.AlgoCore):
 
             attack = AttackStrategy(game_state, self.config)
             attack.attack()
-            
 
     def repair_defences(self, game_state):
         """
@@ -341,7 +331,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         # Remove damaged stuff
         if len(to_replace) != 0:
             game_state.attempt_remove(to_replace)
-
 
     def assign_upgraded(self, locations):
         """Update expected walls/turrets to be upgraded."""
