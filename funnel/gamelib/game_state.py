@@ -440,6 +440,8 @@ class GameState:
                         existing_unit = unit
 
                 if not existing_unit.upgraded and self.config["unitInformation"][UNIT_TYPE_TO_INDEX[existing_unit.unit_type]].get("upgrade", None) is not None:
+                    if (existing_unit.health / existing_unit.max_health) < 0.8:
+                        continue
                     costs = self.type_cost(existing_unit.unit_type, True)
                     resources = self.get_resources()
                     if resources[SP] >= costs[SP] and resources[MP] >= costs[MP]:
