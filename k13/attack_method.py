@@ -56,7 +56,7 @@ class AttackMethod(object):
 		holes = self.holes if side == 0 else self.holes_mirrored
 		
 		for hole in holes:
-			if game_state.contains_stationary_unit(hole)
+			if game_state.contains_stationary_unit(hole):
 				return False
 
 		return True
