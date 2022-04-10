@@ -41,15 +41,12 @@ class AltDefense:
                    [7, 8], [8, 7], [9, 6], [10, 5], [11, 5], [12, 5], [13, 5], [14, 5]]
         lr_turs = [[2, 12], [25, 12], [5, 10], [22, 10]]
 
-        early_turs = [[2, 12], [25, 12], [5, 10], [6, 10], [21, 10], [22, 10]]
-        final_turs = [[24, 11], [25, 11], [2, 11], [1, 12], [2, 12], [25, 12], [26, 12], [6, 10], [5, 10], [20, 10],
-                      [21, 10], [22, 10], [20, 9]]
-
         frontier_walls = [[0, 13], [1, 13], [2, 13], [25, 13], [26, 13], [27, 13], [3, 12], [24, 12], [5, 11],
                           [22, 11], [19, 10]]
 
-        back_supports = [[11, 4], [12, 4], [13, 4], [14, 4], [15, 4], [16, 4], [12, 3], [13, 3], [14, 3], [15, 3],
-                         [13, 2], [14, 2]]
+        early_turs = [[2, 12], [25, 12], [5, 10], [6, 10], [21, 10], [22, 10]]
+        final_turs = [[24, 11], [25, 11], [2, 11], [1, 12], [2, 12], [25, 12], [26, 12], [6, 10], [5, 10], [20, 10],
+                      [21, 10], [22, 10], [20, 9]]
 
         if turn_number == 0:
             # basic V shape
@@ -60,10 +57,14 @@ class AltDefense:
             # complete V shape
             walls = full_v
             turs = lr_turs
-        elif turn_number in range(2, 12):
+        elif turn_number < 12:
             # same
             walls = full_v
-            turs = early_turs
+            turs = lr_turs
+            upgrades = early_turs + frontier_walls
+        elif turn_number < 20:
+            walls = full_v
+            turs = lr_turs
             upgrades = early_turs + frontier_walls
         else:
             walls = full_v + frontier_walls

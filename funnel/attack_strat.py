@@ -4,6 +4,27 @@ import gamelib
 from gamelib import GameState, GameMap
 from BoundedBox import BoundedBox
 
+# interceptor spawns
+start_ints = [[23, 9], [4, 9]]
+mid_ints = [[23, 9], [22, 8]]
+
+# optimal demolisher starts on the left and right side
+left_demo_start = [3, 10]
+right_demo_start = [24, 10]
+
+# farthest point back on l and r edge
+l_back_demo = [12, 1]
+r_back_demo = [15, 1]
+
+
+ltr_demo_walls = [[22, 12], [22, 13]]
+
+# plugs for the funnel
+l_plug = [4, 11]
+r_plug = [23, 11]
+
+# counter for tracker rounds
+round_counter = 0
 
 class AttackStrategy:
     game_state: GameState
@@ -27,29 +48,9 @@ class AttackStrategy:
         game_state = self.game_state
         turn_number = game_state.turn_number
 
-        start_ints = [[23, 9], [4, 9]]
-        mid_ints = [[23, 9], [22, 8]]
-
-        left_demo_start = [12, 1]
-        right_demo_start = [24, 10]
-
-        r_optimal_demo = [24, 10]
-
-        l_back_demo = [12, 1]
-        r_back_demo = [15, 1]
-
-        ltr_demo_walls = [[22, 12], [22, 13]]
-
-        l_plug = [4, 11]
-        r_plug = [23, 11]
-
         demos = []
         ints = []
         scouts = []
-
-        low3_demo_wall = [[23, 13], [22, 13], [21, 13]]
-        demo_wall2 = [20, 8]
-
         if turn_number in range(0, 4):
             game_state.attempt_spawn(INTERCEPTOR, start_ints)
         else:
@@ -181,10 +182,17 @@ class AttackStrategy:
         # but in practice will probably never happen
         return 0
 
+    def demo_attack_weak_side(self):
+        game_state = self.game_state
+        gmap = game_state.game_map
 
+        strong_side = self.predict_opening(self.game_state)
+        weak_side = -strong_side
 
-
-
+        # start opposite side
+        start_location = left_demo_start
+        if strong_side == 1:
+            start_location = right_demo_start
 
 
 def clamp(num, lower, upper) -> int:
