@@ -160,10 +160,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         for (lx, ly), (rx, ry) in zip(left_coords, right_coords):
             units = game_state.game_map[lx, ly]
             for unit in units:
-                left_price += unit.unit_type.cost1
+                left_price += unit.cost[game_state.SP]
             units = game_state.game_map[rx, ry]
             for unit in units:
-                right_price += unit.unit_type.cost1
+                right_price += unit.cost[game_state.SP]
 
         if left_price >= right_price + 10:
             return -1
@@ -341,7 +341,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             walls_3 = ((22, 12),)
             upgrade_3 = ((1, 12),)
             # upgrade right side if we chose to upgrade left side earlier
-            if game_state.game_map[1][12] is not None and game_state.game_map[1][12].upgraded:
+            if game_state.game_map[1, 12] and game_state.game_map[1, 12][0].upgraded:
                 upgrade_3 = ((24, 12),)
 
             walls_loc.extend(walls_3)               # adds RHS wall in front of funnel turret
