@@ -272,7 +272,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             # Sending more at once is better since attacks can only hit a single scout at a time
             if game_state.turn_number % 2 == 1:
                 # spawn = [12, 1] if support_right else [15, 1]
-                spawn = random.choice([(12, 1), (15, 1)])
+                spawn = random.choice([[12, 1], [14, 0]])
                 unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
                 game_state.attempt_spawn(unit, spawn, 1000)
 
@@ -652,7 +652,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         support_cost = game_state.type_cost(SUPPORT)[0]
 
-        right_facing_supports = [(8, 6), (9, 6), (10, 6), (11, 6), (12, 6), (13, 6), (14, 6), (15, 6), (16, 6), (17, 6), (18, 6), (8, 5), (9, 5), (10, 5), (9, 4), (10, 4), (12, 4), (13, 4), (14, 4), (15, 4), (16, 4), (17, 4), (18, 4), (10, 3), (12, 3), (13, 3), (14, 3), (15, 3), (16, 3), (17, 3), (13, 2), (14, 2), (15, 2), (16, 2), (13, 1), (14, 1), (15, 1), (13, 0), (14, 0)]
+        right_facing_supports = [(15, 1), (14, 1), (16, 2), (15, 2), (14, 2), (13, 2), (17, 3), (16, 3), (15, 3), (14, 3), (13, 3), (12, 3), (17, 5), (16, 5), (15, 5), (14, 5), (13, 5), (12, 5), (11, 5), (18, 6), (17, 6), (16, 6), (15, 6), (14, 6), (13, 6), (12, 6), (11, 6), (10, 6)]
         left_facing_supports = [(27 - loc[0], loc[1]) for loc in right_facing_supports]
         supports_loc = right_facing_supports if support_right else left_facing_supports
 
