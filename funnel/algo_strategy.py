@@ -20,6 +20,7 @@ from sys import maxsize, stderr
 import json
 from collections import OrderedDict
 from heapq import heappush, heappop
+from attack_method import CornerPing, init_attack_method_globals
 
 class AlgoStrategy(gamelib.AlgoCore):
     def __init__(self):
@@ -95,6 +96,42 @@ class AlgoStrategy(gamelib.AlgoCore):
         for i in range(8):
             for tup in p2_regions[i]:
                 P2_COORD_TO_REGION[tup] = i + 1
+
+        init_attack_method_globals(game_state)
+        self.corner_ping_attack = CornerPing()
+
+        # TODO: update this as we add supports
+        self.total_support = 0
+
+    def get_attack_spawns(self, game_state, method):
+        """
+        Returns a list of mobile units (tuple format: (x, y, type, num)) to place for an attack
+        Returns None if attack is infeasible or too weak given current resources
+        """
+        # Check if any of the holes are blocked
+        holes = method.get_holes(game_state)
+        for hole in holes:
+            if game_state.contains_stationary_unit(hole):
+                return None
+
+        new_structs = method.get_new_structures(game_state)
+
+        # method returns None if we cannot afford all new structures
+        if new_structs is None:
+            return None
+
+        spawns = method.get_spawns(game_state, self.total_support)
+
+        # spawns is empty if we cannot afford a strong enough push
+        if not spawns:
+            return None
+
+        return spawns
+
+    def perform_attack(self, game_state, method, spawns):
+        method.place_structures(game_state)
+        for x, y, unit_type, num in spawns:
+            game_state.attempt_spawn(unit_type, (x, y), num)
 
     def on_turn(self, turn_state):
         """
