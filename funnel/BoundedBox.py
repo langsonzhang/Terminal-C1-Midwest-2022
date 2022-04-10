@@ -9,10 +9,8 @@ import gamelib.util as util
 
 
 class BoundedBox():
-
     TL: [int, int]
     BR: [int, int]
-
 
     # !!!! DO NOT MUTATE THIS MAP IF ITS FROM game_state !!!!
     gmap: GameMap
@@ -43,6 +41,15 @@ class BoundedBox():
                         total += 1
         return total
 
+    def get_num_these_units(self, unit_representation) -> int:
+        total: int = 0
+        for row in range(self.BR[1], self.TL[1]):
+            for col in range(self.TL[0], self.BR[0]):
+                for unit in self.gmap[col, row] or []:
+                    if unit.unit_type in unit_representation:
+                        total += 1
+        return total
+
     # returns the position of the lowest turret on the enemy's side within this BB
     def get_lowest_unit(self, unit_representation) -> [int, int]:
         for row in range(self.BR[1], self.TL[1]):
@@ -65,12 +72,20 @@ class BoundedBox():
                         ret.append(unit)
         return ret
 
+    def get_total_hp(self):
+        ret = 0
+        for row in range(self.BR[1], self.TL[1]):
+            for col in range(self.TL[0], self.BR[0]):
+                for unit in self.gmap[col, row] or []:
+                    ret += unit.health
+        return ret
 
-#––––––––––––––––––––––– UNIT TESTS ––––––––––––––––––––––––––––––––––––––
+
+# ––––––––––––––––––––––– UNIT TESTS ––––––––––––––––––––––––––––––––––––––
 
 box = BoundedBox([5, 100], [100, 5], GameMap({}))
-assert(box.get_area() == 95 * 95)
-assert(box.get_density("sdlkfj") == 0)
+assert (box.get_area() == 95 * 95)
+assert (box.get_density("sdlkfj") == 0)
 # assert(box.get_density(None) > 0.9)
 box.get_units("sdf")
 box.get_lowest_unit("sdf")

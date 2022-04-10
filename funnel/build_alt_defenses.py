@@ -1,5 +1,8 @@
 from heapq import heappush, heappop
 from gamelib import GameState, GameMap
+from heapq import heappush, heappop, heapify
+
+prio = []
 
 
 class AltDefense:
@@ -27,6 +30,7 @@ class AltDefense:
         """
         turn_number = self.game_state.turn_number
         game_state = self.game_state
+        gmap = game_state.game_map
 
         walls = []
         turs = []
@@ -34,19 +38,23 @@ class AltDefense:
         upgrades = []
 
         full_v = [[0, 13], [1, 13], [2, 13], [25, 13], [26, 13], [27, 13], [3, 12], [24, 12], [5, 11], [22, 11], [6, 9],
-                  [21, 9], [7, 8], [20, 8], [8, 7], [19, 7], [9, 6], [18, 6], [10, 5], [11, 5], [12, 5], [13, 5],
-                  [14, 5], [15, 5], [16, 5], [17, 5]]
+                  [21, 9], [7, 8], [20, 8], [8, 7], [19, 7], [9, 6], [18, 6], [10, 5], [17, 5], [11, 4], [16, 4],
+                  [12, 3], [13, 3], [14, 3], [15, 3]]
         basic_v = [[0, 13], [1, 13], [2, 13], [25, 13], [26, 13], [27, 13], [3, 12], [24, 12], [5, 11], [22, 11],
-                   [6, 9],
-                   [7, 8], [8, 7], [9, 6], [10, 5], [11, 5], [12, 5], [13, 5], [14, 5]]
+                   [6, 9], [7, 8], [8, 7], [9, 6], [10, 5], [11, 4], [12, 3], [13, 3], [14, 3], [15, 3]]
         lr_turs = [[2, 12], [25, 12], [5, 10], [22, 10]]
 
-        frontier_walls = [[0, 13], [1, 13], [2, 13], [25, 13], [26, 13], [27, 13], [3, 12], [24, 12], [5, 11],
-                          [22, 11], [19, 10]]
+        frontier_walls = [[0, 13], [1, 13], [2, 13], [25, 13], [26, 13], [27, 13], [3, 12], [24, 12], [5, 11], [22, 11]]
 
-        early_turs = [[2, 12], [25, 12], [5, 10], [6, 10], [21, 10], [22, 10]]
-        final_turs = [[24, 11], [25, 11], [2, 11], [1, 12], [2, 12], [25, 12], [26, 12], [6, 10], [5, 10], [20, 10],
+        help1_turs = [[6, 10], [21, 10]]
+        mid_turs = [[1, 12], [2, 12], [25, 12], [26, 12], [2, 11], [3, 11], [24, 11], [25, 11], [5, 10], [6, 10],
+                    [21, 10], [22, 10]]
+        final_turs = [[24, 11], [3, 11], [25, 11], [2, 11], [1, 12], [2, 12], [25, 12], [26, 12], [6, 10], [5, 10],
+                      [20, 10],
                       [21, 10], [22, 10], [20, 9]]
+
+        middle_supports = [[13, 7], [14, 7], [12, 7], [15, 7], [9, 7], [10, 7], [11, 7], [16, 7], [17, 7], [18, 7]]
+        middle2_supports = [[x, 6] for x in range(10, 18)]
 
         if turn_number == 0:
             # basic V shape
@@ -60,19 +68,26 @@ class AltDefense:
         elif turn_number < 12:
             # same
             walls = full_v
-            turs = lr_turs
-            upgrades = early_turs + frontier_walls
-        elif turn_number < 20:
-            walls = full_v
-            turs = lr_turs
-            upgrades = early_turs + frontier_walls
-        else:
-            walls = full_v + frontier_walls
-            turs = lr_turs + final_turs
-            sups = back_supports
+            turs = lr_turs + help1_turs
             upgrades = turs + frontier_walls
+        elif turn_number < 33:
+            walls = full_v
+            turs = mid_turs
+            upgrades = mid_turs + frontier_walls
+        else:
+            walls = full_v
+            turs = lr_turs + final_turs
+            upgrades = turs + frontier_walls + sups
 
         game_state.attempt_spawn(TURRET, turs)
         game_state.attempt_spawn(WALL, walls)
         game_state.attempt_upgrade(upgrades)
-        game_state.attempt_spawn(SUPPORT, sups)
+
+        if turn_number > 19:
+            for i in middle_supports:
+                game_state.attempt_spawn(SUPPORT, i)
+                game_state.attempt_upgrade(i)
+
+            for coord in middle2_supports:
+                game_state.attempt_spawn(SUPPORT, coord)
+                game_state.attempt_upgrade(coord)

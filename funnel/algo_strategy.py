@@ -10,7 +10,7 @@ Advanced strategy tips:
   board states. Though, we recommended making a copy of the map to preserve 
   the actual current map state.
 """
-
+import time
 
 import gamelib
 import random
@@ -28,6 +28,9 @@ from BoundedBox import BoundedBox
 
 
 class AlgoStrategy(gamelib.AlgoCore):
+
+
+
     def __init__(self):
         super().__init__()
         seed = random.randrange(maxsize)
@@ -121,7 +124,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         gamelib.debug_write('Performing turn {} of your custom algo strategy'.format(game_state.turn_number))
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
 
+        gamelib.util.debug_write("Starting " + str(game_state.turn_number))
+        start = time.time()
         self.starter_strategy(game_state)
+        gamelib.util.debug_write("Completed turn took " + str(time.time() - start))
 
         game_state.submit_turn()
 
@@ -223,7 +229,8 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         # TODO: Repair phase
         self.repair_defences(game_state)
-        
+
+        alt_defense = True
         if not alt_defense:
             holes = set()
             enforced_locs = None
@@ -253,11 +260,11 @@ class AlgoStrategy(gamelib.AlgoCore):
             # Lastly, if we have spare SP, let's build some supports
             self.create_endgame_supports(game_state, support_right)
         else:
-            defense = AltDefense(game_state, self.config)
-            defense.build_defences()
-
             attack = AttackStrategy(game_state, self.config)
             attack.attack()
+
+            defense = AltDefense(game_state, self.config)
+            defense.build_defences()
 
     def patch_optional_walls(self, game_state, holes):
         for wall in list(self.P1_WALLS_OPTIONAL.keys()):
@@ -295,7 +302,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         for loc in walls_to_check:
             unit = game_state.contains_stationary_unit(loc)
             if unit == False:       # If broken, add to list
-                if ignore_locations is not None and location in ignore_locations:
+                if ignore_locations is not None and loc in ignore_locations:
                     continue
                 heappush(broken_structures, (-loc[1], wall, loc))
             else:
@@ -306,7 +313,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         for loc in turrets_to_check:
             unit = game_state.contains_stationary_unit(loc)
             if unit == False:       # If broken, add to list
-                if ignore_locations is not None and location in ignore_locations:
+                if ignore_locations is not None and loc in ignore_locations:
                     continue
                 heappush(broken_structures, (-loc[1], turret, loc))
             else:
