@@ -238,7 +238,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                 game_state.attempt_spawn(INTERCEPTOR, (19, 15))
             # elif game_state.get_resource(1, 1) >= 15:
             #     game_state.attempt_spawn(INTERCEPTOR, (19, 15), 2)
-            elif (game_state.turn_number % 2 == 0):
+            elif game_state.turn_number % 2 == 0:
                 # spawn = random.choice([[12, 1], [14, 0]])
                 # unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
                 # game_state.attempt_spawn(unit, spawn, 1000)
