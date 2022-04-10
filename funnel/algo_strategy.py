@@ -234,7 +234,8 @@ class AlgoStrategy(gamelib.AlgoCore):
             # Only spawn Scouts every other turn
             # Sending more at once is better since attacks can only hit a single scout at a time
             if game_state.turn_number % 2 == 1:
-                spawn = [12, 1] if support_right else [15, 1]
+                # spawn = [12, 1] if support_right else [15, 1]
+                spawn = random.choice([(12, 1), (15, 1)])
                 unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
                 game_state.attempt_spawn(unit, spawn, 1000)
 
