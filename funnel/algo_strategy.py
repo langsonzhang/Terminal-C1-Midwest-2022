@@ -24,6 +24,8 @@ from attack_method import CornerPing, init_attack_method_globals
 
 from build_alt_defenses import AltDefense
 from attack_strat import AttackStrategy
+from BoundedBox import BoundedBox
+
 
 class AlgoStrategy(gamelib.AlgoCore):
     def __init__(self):
@@ -55,6 +57,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         # Walls/turrets should we have at any point
         self.P1_WALLS_EXPECTED = {}
+        self.P1_WALLS_OPTIONAL = {}
         self.P1_TURRET_EXPECTED = {}
 
         # For efficient look-up of SPAWN EDGES
@@ -112,21 +115,29 @@ class AlgoStrategy(gamelib.AlgoCore):
         Returns None if attack is infeasible or too weak given current resources
         """
         # Check if any of the holes are blocked
+        optional_walls = self.P1_WALLS_OPTIONAL.keys()
+        min_bank = game_state.type_cost(WALL)[game_state.SP] * len(optional_walls)
         holes = method.get_holes(game_state)
         for hole in holes:
             if game_state.contains_stationary_unit(hole):
+                gamelib.debug_write("Hole blocked!")
                 return None
+            if hole in optional_walls:
+                min_bank -= game_state.type_cost(WALL)[game_state.SP]
 
-        new_structs = method.get_new_structures(game_state)
+
+        new_structs = method.get_new_structures(game_state, min_bank)
 
         # method returns None if we cannot afford all new structures
         if new_structs is None:
+            gamelib.debug_write("Can't afford structures!")
             return None
 
         spawns = method.get_spawns(game_state, self.total_support)
 
         # spawns is empty if we cannot afford a strong enough push
         if not spawns:
+            gamelib.debug_write("Can't afford push!")
             return None
 
         return spawns
@@ -134,7 +145,7 @@ class AlgoStrategy(gamelib.AlgoCore):
     def perform_attack(self, game_state, method, spawns):
         method.place_structures(game_state)
         for x, y, unit_type, num in spawns:
-            game_state.attempt_spawn(unit_type, (x, y), num)
+            result = game_state.attempt_spawn(unit_type, [[x, y]], num)
 
     def on_turn(self, turn_state):
         """
@@ -252,38 +263,40 @@ class AlgoStrategy(gamelib.AlgoCore):
         
         if not alt_defense:
             # First, place basic defenses
-            self.build_defences(game_state)
+            self.build_defences(game_state, block_right=True)
 
-            # If the turn is less than 5, stall with interceptors and wait to see enemy's base
+            holes = set()
             if game_state.turn_number < 5:
                 self.stall_with_interceptors(game_state, 1)
             else:
-                # Now let's analyze the enemy base to see where their defenses are concentrated.
-                # If they have many units in the front we can build a line for our demolishers to attack them at long range.
-                # if self.detect_enemy_unit(game_state, unit_type=None, valid_x=None, valid_y=[14, 15]) > 10:
-                #     # self.demolisher_line_strategy(game_state)
-                #     pass
-                # else:
-                # They don't have many units in the front so lets figure out their least defended area and send Scouts there.
-                # Only spawn Scouts every other turn
-                # Sending more at once is better since attacks can only hit a single scout at a time
                 if game_state.turn_number % 2 == 1:
-                    # spawn = [12, 1] if support_right else [15, 1]
-                    spawn = random.choice([(12, 1), (15, 1)])
-                    unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
-                    game_state.attempt_spawn(unit, spawn, 1000)
+                    # spawn = random.choice([[12, 1], [14, 0]])
+                    # unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
+                    # game_state.attempt_spawn(unit, spawn, 1000)
 
-                # Lastly, if we have spare SP, let's build some supports
-                self.create_endgame_supports(game_state, support_right)
+                    spawns = self.get_attack_spawns(game_state, self.corner_ping_attack)
+                    if spawns is not None:
+                        holes = self.corner_ping_attack.get_holes(game_state)
+                        self.perform_attack(game_state, self.corner_ping_attack, spawns)
+
+            self.patch_optional_walls(game_state, holes)
+
+            # Lastly, if we have spare SP, let's build some supports
+            self.create_endgame_supports(game_state, support_right)
         else:
             defense = AltDefense(game_state, self.config)
             defense.build_defences()
 
             attack = AttackStrategy(game_state, self.config)
             attack.attack()
-            
 
-    def repair_defences(self, game_state):
+    def patch_optional_walls(self, game_state, holes):
+        for wall in list(self.P1_WALLS_OPTIONAL.keys()):
+            if wall not in holes:
+                game_state.attempt_spawn(WALL, wall)
+                game_state.attempt_remove(wall)
+
+    def repair_defences(self, game_state, ignore_locations=None):
         """
         Find broken walls and turrets, and replace with lvl 1.
 
@@ -302,10 +315,10 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         wall = WALL
         turret = TURRET
-        structure = wall
         cost = {wall: game_state.type_cost(WALL), turret: game_state.type_cost(TURRET)}
 
         walls_to_check = list(self.P1_WALLS_EXPECTED.keys())
+
         turrets_to_check = list(self.P1_TURRET_EXPECTED.keys())
         
         # ==ASSESS==:
@@ -313,6 +326,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         for loc in walls_to_check:
             unit = game_state.contains_stationary_unit(loc)
             if unit == False:       # If broken, add to list
+                if ignore_locations is not None and location in ignore_locations:
+                    continue
                 heappush(broken_structures, (-loc[1], wall, loc))
             else:
                 if (unit.health / unit.max_health) < 0.75:    # Check if damaged
@@ -322,6 +337,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         for loc in turrets_to_check:
             unit = game_state.contains_stationary_unit(loc)
             if unit == False:       # If broken, add to list
+                if ignore_locations is not None and location in ignore_locations:
+                    continue
                 heappush(broken_structures, (-loc[1], turret, loc))
             else:
                 if (unit.health / unit.max_health) < 0.75:    # Check if damaged
@@ -331,7 +348,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         # Spawn all broken walls and turrets
         while len(broken_structures) > 0:
             y, unit_type, location = heappop(broken_structures)
-
+            
+            # Calculate cost for early exit
             total_cost += cost[unit_type][0]
             if total_cost > current_SP:
                 break
@@ -342,7 +360,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         if len(to_replace) != 0:
             game_state.attempt_remove(to_replace)
 
-
     def assign_upgraded(self, locations):
         """Update expected walls/turrets to be upgraded."""
         for loc in locations:
@@ -351,14 +368,10 @@ class AlgoStrategy(gamelib.AlgoCore):
             else:
                 self.P1_TURRET_EXPECTED[loc] = 2
 
-
     def build_defences(self, game_state, block_right=False):
         """
-        Build basic defenses using hardcoded locations.
-        Remember to defend corners and avoid placing units in the front where enemy demolishers can attack them.
+        Build funnel defense.
         """
-        # Useful tool for setting up your base locations: https://www.kevinbai.design/terminal-map-maker
-        # More community tools available at: https://terminal.c1games.com/rules#Download
         turn_number = game_state.turn_number
 
         turrets_loc = []
@@ -368,13 +381,16 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         if turn_number >= 0:
             turrets_0 = ((1, 12), (21, 10), (22, 11), (24, 12))
-            walls_0 = ((0, 13), (26, 13), (27, 13), (2, 11), (3, 10), (4, 9), (20, 9), (5, 8), (19, 8), (6, 7), (8, 7), (9, 7), (10, 7), (11, 7), (12, 7), (13, 7), (14, 7), (15, 7), (16, 7), (17, 7), (18, 7), (7, 6))
+            walls_0 = ((0, 13), (2, 11), (3, 10), (4, 9), (20, 9), (5, 8), (19, 8), (6, 7), (8, 7), (9, 7), (10, 7), (11, 7), (12, 7), (13, 7), (14, 7), (15, 7), (16, 7), (17, 7), (18, 7), (7, 6))
+            walls_0_optional = ((26, 13), (27, 13))
 
             turrets_loc.extend(turrets_0)
             walls_loc.extend(walls_0)
+            #walls_loc_optional.extend(walls_0_optional)
 
             self.P1_TURRET_EXPECTED.update({loc: 1 for loc in turrets_0})
             self.P1_WALLS_EXPECTED.update({loc: 1 for loc in walls_0})
+            self.P1_WALLS_OPTIONAL.update({loc: 1 for loc in walls_0_optional})
 
         if turn_number >= 1:
             walls_1 = ((24, 13),)
@@ -482,21 +498,58 @@ class AlgoStrategy(gamelib.AlgoCore):
             game_state.attempt_upgrade(supports_loc)
 
         # Keep the right 2 walls as optional
-        if not block_right:
-            game_state.attempt_remove(((26, 13), (27, 13)))
+        # if not block_right:
+        #     game_state.attempt_remove(((26, 13), (27, 13)))
+    
+    def core_defenses_satisfied(self, game_state, ignore_locations=None):
+        """
+        Return True if necessary defense structures are in-place, and False
+        otherwise.
         
-    def build_reactive_defense(self, game_state):
+        Parameters
+        ----------
+        ignore_locations : set
+            Set of coordinates (as tuples)
+
         """
-        This function builds reactive defenses based on where the enemy scored on us from.
-        We can track where the opponent scored by looking at events in action frames 
-        as shown in the on_action_frame function
-        """
-        locations = list(self.scored_on_locations)
-        for location in locations:
-            # Build turret one space above so that it doesn't block our own edge spawn locations
-            build_location = [location[0], location[1]+1]
-            game_state.attempt_spawn(TURRET, build_location)
-            self.scored_on_locations.remove(location)
+        wall = WALL
+        turret = TURRET
+
+        # Necessary structures and their levels
+        walls_lvl1 = {(2, 11), (3, 10), (4, 9), (20, 9), (5, 8), (19, 8), (6, 7), (8, 7), (9, 7), (10, 7), (11, 7), (12, 7), (13, 7), (14, 7), (15, 7), (16, 7), (17, 7), (18, 7), (7, 6)}
+        walls_lvl2 = {(0, 13), (1, 13), (2, 12), (25, 13), (22, 12), (24, 13)}
+        turrets_lvl1 = {(22, 10), (24, 10)}
+        turrets_lvl2 = {(1, 12), (21, 10), (22, 11), (24, 12)}
+
+        # Remove ignored locations
+        if ignore_locations is not None:
+            walls_lvl1 = walls_lvl1.difference(ignore_locations)
+            walls_lvl2 = walls_lvl2.difference(ignore_locations)
+            turrets_lvl1 = turrets_lvl1.difference(ignore_locations)
+            turrets_lvl2 = turrets_lvl2.difference(ignore_locations)
+
+        # Check each location
+        for loc in walls_lvl1:
+            unit = game_state.contains_stationary_unit(loc)
+            if not unit or unit.unit_type != wall:
+                return False
+        
+        for loc in walls_lvl2:
+            unit = game_state.contains_stationary_unit(loc)
+            if not unit or unit.unit_type != wall or not unit.upgraded:
+                return False
+        
+        for loc in turrets_lvl1:
+            unit = game_state.contains_stationary_unit(loc)
+            if not unit or unit.unit_type != turret:
+                return False
+        
+        for loc in turrets_lvl2:
+            unit = game_state.contains_stationary_unit(loc)
+            if not unit or unit.unit_type != turret or not unit.upgraded:
+                return False
+
+        return True
 
     def stall_with_interceptors(self, game_state, num_units):
         """
