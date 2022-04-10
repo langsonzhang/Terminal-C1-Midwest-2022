@@ -1,13 +1,19 @@
 import math
-from game_lib.game_state import WALL, SUPPORT, TURRET, SCOUT, DEMOLISHER, INTERCEPTOR
 
-def init_attack_method_globals(game_state):
-    global PING_HEALTH, DEMO_HEALTH, PING_COST, DEMO_COST, INTERCEPTOR_COST
-    PING_HEALTH = game_state.config["unitInformation"][3]["startHealth"]
-    DEMO_HEALTH = game_state.config["unitInformation"][4]["startHealth"]
-    PING_COST = game_state.config["unitInformation"][3]["cost2"]
-    DEMO_COST = game_state.config["unitInformation"][4]["cost2"]
-    INTERCEPTOR_COST = game_state.config["unitInformation"][5]["cost2"]
+def init_attack_method_globals(config):
+    global WALL, SUPPORT, TURRET, SCOUT, DEMOLISHER, INTERCEPTOR, PING_HEALTH, DEMO_HEALTH, PING_COST, DEMO_COST, INTERCEPTOR_COST
+    WALL = config["unitInformation"][0]["shorthand"]
+    SUPPORT = config["unitInformation"][1]["shorthand"]
+    TURRET = config["unitInformation"][2]["shorthand"]
+    SCOUT = config["unitInformation"][3]["shorthand"]
+    DEMOLISHER = config["unitInformation"][4]["shorthand"]
+    INTERCEPTOR = config["unitInformation"][5]["shorthand"]
+
+    PING_HEALTH = config["unitInformation"][3]["startHealth"]
+    DEMO_HEALTH = config["unitInformation"][4]["startHealth"]
+    PING_COST = config["unitInformation"][3]["cost2"]
+    DEMO_COST = config["unitInformation"][4]["cost2"]
+    INTERCEPTOR_COST = config["unitInformation"][5]["cost2"]
 
 class AttackMethod:
     def get_holes(self, game_state):

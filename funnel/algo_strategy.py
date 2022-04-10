@@ -97,7 +97,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             for tup in p2_regions[i]:
                 P2_COORD_TO_REGION[tup] = i + 1
 
-        init_attack_method_globals(game_state)
+        init_attack_method_globals(config)
         self.corner_ping_attack = CornerPing()
 
         # TODO: update this as we add supports
