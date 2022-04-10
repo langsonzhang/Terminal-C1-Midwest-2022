@@ -270,16 +270,16 @@ class AlgoStrategy(gamelib.AlgoCore):
                 self.stall_with_interceptors(game_state, 1)
             else:
                 if game_state.turn_number % 2 == 1:
-                    spawn = random.choice([[12, 1], [14, 0]])
-                    unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
-                    game_state.attempt_spawn(unit, spawn, 1000)
+                    # spawn = random.choice([[12, 1], [14, 0]])
+                    # unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
+                    # game_state.attempt_spawn(unit, spawn, 1000)
 
-                    # spawns = self.get_attack_spawns(game_state, self.corner_ping_attack)
-                    # if spawns is not None:
-                    #     holes = self.corner_ping_attack.get_holes(game_state)
-                    #     self.perform_attack(game_state, self.corner_ping_attack, spawns)
+                    spawns = self.get_attack_spawns(game_state, self.corner_ping_attack)
+                    if spawns is not None:
+                        holes = self.corner_ping_attack.get_holes(game_state)
+                        self.perform_attack(game_state, self.corner_ping_attack, spawns)
 
-            # self.patch_optional_walls(game_state, holes)
+            self.patch_optional_walls(game_state, holes)
 
             # Lastly, if we have spare SP, let's build some supports
             self.create_endgame_supports(game_state, support_right)
