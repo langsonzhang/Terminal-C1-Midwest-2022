@@ -10,7 +10,7 @@ Advanced strategy tips:
   board states. Though, we recommended making a copy of the map to preserve 
   the actual current map state.
 """
-import time
+
 
 import gamelib
 import random
@@ -28,9 +28,6 @@ from BoundedBox import BoundedBox
 
 
 class AlgoStrategy(gamelib.AlgoCore):
-
-
-
     def __init__(self):
         super().__init__()
         seed = random.randrange(maxsize)
@@ -124,10 +121,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         gamelib.debug_write('Performing turn {} of your custom algo strategy'.format(game_state.turn_number))
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
 
-        gamelib.util.debug_write("Starting " + str(game_state.turn_number))
-        start = time.time()
         self.starter_strategy(game_state)
-        gamelib.util.debug_write("Completed turn took " + str(time.time() - start))
 
         game_state.submit_turn()
 
@@ -229,19 +223,15 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         # TODO: Repair phase
         self.repair_defences(game_state)
-
-        alt_defense = True
+        
         if not alt_defense:
             holes = set()
             enforced_locs = None
-            if game_state.turn_number < 3:
+            if game_state.turn_number < 5:
                 game_state.attempt_spawn(INTERCEPTOR, (19, 15))
-            # elif game_state.get_resource(1, 1) >= 15:
-            #     game_state.attempt_spawn(INTERCEPTOR, (19, 15), 2)
-            if game_state.turn_number in range(3, 13):
-                if game_state.turn_number % 2 == 0:
-                    position = [12, 1]
-            elif game_state.turn_number % 2 == 0:
+            elif game_state.get_resource(1, 1) >= 15:
+                game_state.attempt_spawn(INTERCEPTOR, (19, 15), 1)
+            elif (game_state.turn_number % 2 == 0):
                 # spawn = random.choice([[12, 1], [14, 0]])
                 # unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
                 # game_state.attempt_spawn(unit, spawn, 1000)
@@ -255,9 +245,11 @@ class AlgoStrategy(gamelib.AlgoCore):
                     enforced_locs = self.core_structures['WALL_1'].union(self.core_structures['WALL_2'])
                     enforced_locs = enforced_locs.union(self.core_structures['TURRET_1']).union(self.core_structures['TURRET_2'])
                     enforced_locs = enforced_locs.difference(holes)
-            elif game_state.turn_number % 2 == 1:
-                attack = AttackStrategy(game_state, self.config)
-                attack.attack()
+                else:
+                    game_state.attempt_spawn(DEMOLISHER, (12, 1), 1000)
+            else:
+                game_state.attempt_spawn(INTERCEPTOR, (19, 15), 1)
+
 
             self.build_defences(game_state, block_right=False, enforced_locs=enforced_locs)
             self.remove_walls_lvl1(game_state)
@@ -266,11 +258,11 @@ class AlgoStrategy(gamelib.AlgoCore):
             # Lastly, if we have spare SP, let's build some supports
             self.create_endgame_supports(game_state, support_right)
         else:
-            attack = AttackStrategy(game_state, self.config)
-            attack.attack()
-
             defense = AltDefense(game_state, self.config)
             defense.build_defences()
+
+            attack = AttackStrategy(game_state, self.config)
+            attack.attack()
 
     def patch_optional_walls(self, game_state, holes):
         for wall in list(self.P1_WALLS_OPTIONAL.keys()):
@@ -319,7 +311,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         for loc in turrets_to_check:
             unit = game_state.contains_stationary_unit(loc)
             if unit == False:       # If broken, add to list
-                if ignore_locations is not None and loc in ignore_locations:
+                if ignore_locations is not None and location in ignore_locations:
                     continue
                 heappush(broken_structures, (-loc[1], turret, loc))
             else:
