@@ -279,6 +279,85 @@ class AlgoStrategy(gamelib.AlgoCore):
         # Keep the right 2 walls as optional
         game_state.attempt_remove(((26, 13), (27, 13)))
 
+    def predict_attack_side(self, game_state):
+        """
+        Looks at opponent layout to determine which side attacks will most likely come from.
+        Returns -1 for left side, 1 for right side, and 0 if unknown/equally likely
+        """
+        left_edges = [(13 - i, 27 - i) for i in range(14)]
+        right_edges = [(i + 14, 27 - i) for i in range(14)]
+
+        left_exit_side = 0
+        right_exit_side = 0
+
+        # run through all the spawn edges starting with the center most and see where the path leads
+        for left, right in zip(left_edges, right_edges):
+            if left_exit_side == 0 and not game_state.contains_stationary_unit(left):
+                path = game_state.find_path_to_edge(left)
+                if path[-1][1] >= game_state.game_map.HALF_ARENA:
+                    for x, y in path[::-1]:
+                        if y == game_state.game_map.HALF_ARENA:
+                            left_exit_side = -1 if x < game_state.HALF_ARENA else 1
+                            break
+
+            if right_exit_side == 0 and not game_state.contains_stationary_unit(right):
+                path = game_state.find_path_to_edge(right)
+                if path[-1][1] >= game_state.game_map.HALF_ARENA:
+                    for x, y in path[::-1]:
+                        if y == game_state.game_map.HALF_ARENA:
+                            right_exit_side = -1 if x < game_state.HALF_ARENA else 1
+                            break
+
+        # if both left + right edges exit to the same side
+        # or if exactly one edge does not exit we are done
+        if left_exit_side == right_exit_side and left_exit_side + right_exit_side != 0:
+            return left_exit_side if left_exit_side != 0 else right_exit_side
+
+        # otherwise: sum structure costs of both sides and compare; if there is
+        # a large difference the more expensive side is more likely to attack
+        left_coords = [(x, y) for x in range(14) for y in range(14, 14 + x)]
+        right_coords = [(x, y) for x in range(14, 28) for y in range(14, 42 - x)]
+
+        left_price = 0
+        right_price = 0
+        for (lx, ly), (rx, ry) in zip(left_coords, right_coords):
+            units = game_state.game_map[lx, ly]
+            for unit in units:
+                left_price += unit.unit_type.cost1
+            units = game_state.game_map[rx, ry]
+            for unit in units:
+                right_price += unit.unit_type.cost1
+
+        if left_price >= right_price + 10:
+            return -1
+        elif right_price >= left_price + 10:
+            return 1
+
+        # last resort: follow the structures along the corners and check symmetry
+        left_corner = [(x, 14) for x in range(14)]
+        right_corner = [(x, 14) for x in range(27, 13, -1)]
+
+        for (lx, ly), (rx, ry) in zip(left_corner, right_corner):
+            left_struct = game_state.game_map[lx, ly][0] if game_state.game_map[lx, ly] else None
+            right_struct = game_state.game_map[rx, ry][0] if game_state.game_map[rx, ry] else None
+            if left_struct is None and right_struct is None:
+                return 0
+            if left_struct is None and right_struct is not None:
+                return -1
+            if left_struct is not None and right_struct is None:
+                return 1
+            if not left_struct.upgraded and right_struct.upgraded:
+                return -1
+            if left_struct.upgraded and not right_struct.upgraded:
+                return 1
+            if left_struct.pending_removal and not right_struct.pending_removal:
+                return -1
+            if not left_struct.pending_removal and right_struct.pending_removal:
+                return 1
+
+        # theoretically possible to reach this code (if top edge is perfectly symmetrical with no holes)
+        # but in practice will probably never happen
+        return 0
 
     def build_reactive_defense(self, game_state):
         """
