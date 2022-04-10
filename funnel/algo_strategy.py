@@ -19,6 +19,7 @@ import warnings
 from sys import maxsize, stderr
 import json
 from collections import OrderedDict
+from heapq import heappush, heappop
 
 
 class AlgoStrategy(gamelib.AlgoCore):
