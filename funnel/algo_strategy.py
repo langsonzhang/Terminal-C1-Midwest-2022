@@ -263,6 +263,8 @@ class AlgoStrategy(gamelib.AlgoCore):
             # First, place basic defenses
             self.build_defences(game_state, block_right=True)
 
+            self.remove_walls_lvl1(game_state)
+
             holes = set()
             if game_state.turn_number < 5:
                 game_state.attempt_spawn(INTERCEPTOR, (19, 15))
@@ -429,7 +431,6 @@ class AlgoStrategy(gamelib.AlgoCore):
             self.P1_WALLS_EXPECTED.update({loc: 1 for loc in walls_3})
             self.assign_upgraded(upgrade_3)
 
-
         if turn_number >= 4:
             turret_4 = ((24, 10),)
             walls_4 = ((25, 13), (2, 13), (2, 12))
@@ -488,7 +489,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         # Turn 1 Turrets & Walls
         game_state.attempt_spawn(TURRET, turrets_loc)
         game_state.attempt_spawn(WALL, walls_loc)
-        # TODO: Edit upgrade, so it doesn't upgrade walls < 80% in health
         game_state.attempt_upgrade(to_upgrade)
 
         # (Mid-to-End Game) Supports
@@ -723,6 +723,15 @@ class AlgoStrategy(gamelib.AlgoCore):
             
             self.P1_SUPPORT_EXPECTED.add(loc)
             self.total_support += 1
+
+    def remove_walls_lvl1(self, game_state):
+        """Removes level 1 walls."""
+        wall = WALL
+        walls_expected = self.P1_WALLS_EXPECTED
+        for loc in walls_expected:
+            unit = game_state.game_map[loc]
+            if unit and unit[0].unit_type == wall and not unit[0].upgraded and not unit[0].pending_removal:
+                game_state.attempt_remove(loc)
 
 
 if __name__ == "__main__":
