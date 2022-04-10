@@ -52,13 +52,11 @@ class AlgoStrategy(gamelib.AlgoCore):
         # This is a good place to do initial setup
         self.scored_on_locations = set()
 
-        self.p1_walls_to_repair = OrderedDict()
-        self.p2_support_locations = {}       # stored as (location, level)
-
         # Walls/turrets should we have at any point
         self.P1_WALLS_EXPECTED = {}
         self.P1_WALLS_OPTIONAL = {}
         self.P1_TURRET_EXPECTED = {}
+        self.P1_SUPPORT_EXPECTED = set()
 
         # For efficient look-up of SPAWN EDGES
         global LEFT_SPAWN_EDGES, RIGHT_SPAWN_EDGES
@@ -106,7 +104,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         init_attack_method_globals(config)
         self.corner_ping_attack = CornerPing()
 
-        # TODO: update this as we add supports
         self.total_support = 0
 
     def get_attack_spawns(self, game_state, method):
@@ -256,7 +253,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         For offense we will use long range demolishers if they place stationary units near the enemy's front.
         If there are no stationary units to attack in the front, we will send Scouts to try and score quickly.
         """
-        # TODO: Check if they're gonna do a corner ping. Prioritize upgrading walls/turrets there first
+        # Recheck number of supports
+        self.count_supports(game_state)
 
         # TODO: Repair phase
         self.repair_defences(game_state)
@@ -267,17 +265,18 @@ class AlgoStrategy(gamelib.AlgoCore):
 
             holes = set()
             if game_state.turn_number < 5:
-                self.stall_with_interceptors(game_state, 1)
-            else:
-                if game_state.turn_number % 2 == 1:
-                    # spawn = random.choice([[12, 1], [14, 0]])
-                    # unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
-                    # game_state.attempt_spawn(unit, spawn, 1000)
-
-                    spawns = self.get_attack_spawns(game_state, self.corner_ping_attack)
-                    if spawns is not None:
-                        holes = self.corner_ping_attack.get_holes(game_state)
-                        self.perform_attack(game_state, self.corner_ping_attack, spawns)
+                game_state.attempt_spawn(INTERCEPTOR, (19, 15))
+            # elif game_state.get_resource(1, 1) >= 15:
+            #     game_state.attempt_spawn(INTERCEPTOR, (19, 15), 2)
+            elif (game_state.turn_number % 2 == 0):
+                # spawn = random.choice([[12, 1], [14, 0]])
+                # unit = random.choice([SCOUT, SCOUT, DEMOLISHER])
+                # game_state.attempt_spawn(unit, spawn, 1000)
+  
+                spawns = self.get_attack_spawns(game_state, self.corner_ping_attack)
+                if spawns is not None:
+                    holes = self.corner_ping_attack.get_holes(game_state)
+                    self.perform_attack(game_state, self.corner_ping_attack, spawns)
 
             self.patch_optional_walls(game_state, holes)
 
@@ -470,7 +469,6 @@ class AlgoStrategy(gamelib.AlgoCore):
                 to_upgrade.extend(upgrade_9)
                 self.assign_upgraded(upgrade_9)
                 self.P1_TURRET_EXPECTED.update({loc: 1 for loc in turret_9})
-
         
             if turn_number >= 10:
                 upgrade_10 = ((26, 12), (25, 12))
@@ -483,6 +481,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             upgrade_12 = ((21, 9), (20, 8), (19, 7))
 
             supports_loc.extend(support_12)
+            self.P1_SUPPORT_EXPECTED.update(set(support_12))
             to_upgrade.extend(upgrade_12)
             # We don't mark it as upgraded, so when repairing, we don't prioritize its upgrade
 
@@ -493,14 +492,27 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.attempt_upgrade(to_upgrade)
 
         # (Mid-to-End Game) Supports
+        before_SP = game_state.get_resource(0, 0)
         game_state.attempt_spawn(SUPPORT, supports_loc)
         if len(supports_loc) != 0:
             game_state.attempt_upgrade(supports_loc)
+        
+        after_SP = game_state.get_resource(0, 0)
+        self.total_support += ((after_SP - before_SP) // game_state.type_cost(SUPPORT)[0])
 
         # Keep the right 2 walls as optional
         # if not block_right:
         #     game_state.attempt_remove(((26, 13), (27, 13)))
     
+    def count_supports(self, game_state):
+        num_supports = 0
+        for loc in self.P1_SUPPORT_EXPECTED:
+            unit = game_state.game_map[loc[0], loc[1]]
+            if unit and unit[0].unit_type == SUPPORT:
+                num_supports += 1
+        
+        self.total_support = num_supports
+
     def core_defenses_satisfied(self, game_state, ignore_locations=None):
         """
         Return True if necessary defense structures are in-place, and False
@@ -510,7 +522,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         ----------
         ignore_locations : set
             Set of coordinates (as tuples)
-
         """
         wall = WALL
         turret = TURRET
@@ -627,8 +638,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         else:
             spawn_loc = (5, 8)
 
-        # TODO: Need to check if there is a path to the wall
-
         # Attempt to spawn demolishers
         game_state.attempt_spawn(DEMOLISHER, spawn_loc, num_units)
 
@@ -711,6 +720,9 @@ class AlgoStrategy(gamelib.AlgoCore):
             if game_state.get_resource(0, 0) - support_cost < 12:
                 break
             game_state.attempt_spawn(SUPPORT, loc)
+            
+            self.P1_SUPPORT_EXPECTED.add(loc)
+            self.total_support += 1
 
 
 if __name__ == "__main__":
