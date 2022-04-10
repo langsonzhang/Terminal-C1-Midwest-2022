@@ -1,5 +1,9 @@
 from heapq import heappush, heappop
 from gamelib import GameState, GameMap
+from heapq import heappush, heappop, heapify
+
+
+prio = []
 
 
 class AltDefense:
@@ -27,6 +31,7 @@ class AltDefense:
         """
         turn_number = self.game_state.turn_number
         game_state = self.game_state
+        gmap = game_state.game_map
 
         walls = []
         turs = []
@@ -47,6 +52,8 @@ class AltDefense:
         early_turs = [[2, 12], [25, 12], [5, 10], [6, 10], [21, 10], [22, 10]]
         final_turs = [[24, 11], [25, 11], [2, 11], [1, 12], [2, 12], [25, 12], [26, 12], [6, 10], [5, 10], [20, 10],
                       [21, 10], [22, 10], [20, 9]]
+
+        middle_supports = [[ 9, 7],[ 10, 7],[ 11, 7],[ 12, 7],[ 13, 7],[ 14, 7],[ 15, 7],[ 16, 7],[ 17, 7],[ 18, 7]]
 
         if turn_number == 0:
             # basic V shape
@@ -69,10 +76,12 @@ class AltDefense:
         else:
             walls = full_v + frontier_walls
             turs = lr_turs + final_turs
-            sups = back_supports
-            upgrades = turs + frontier_walls
+            for i in range(int(game_state.get_resource(0, 0)/8)):
+                sups.append(middle_supports.pop())
+            upgrades = turs + frontier_walls + sups
 
         game_state.attempt_spawn(TURRET, turs)
         game_state.attempt_spawn(WALL, walls)
-        game_state.attempt_upgrade(upgrades)
         game_state.attempt_spawn(SUPPORT, sups)
+        game_state.attempt_upgrade(upgrades)
+

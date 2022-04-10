@@ -1,4 +1,5 @@
 from heapq import heappush, heappop
+from random import random
 
 import gamelib
 from gamelib import GameState, GameMap
@@ -16,7 +17,6 @@ right_demo_start = [24, 10]
 l_back_demo = [12, 1]
 r_back_demo = [15, 1]
 
-
 ltr_demo_walls = [[22, 12], [22, 13]]
 
 # plugs for the funnel
@@ -26,9 +26,11 @@ r_plug = [23, 11]
 # counter for tracker rounds
 round_counter = 0
 
+
 class AttackStrategy:
     game_state: GameState
     config = None
+
 
     def __init__(self, game_state: GameState, config):
         global WALL, SUPPORT, TURRET, SCOUT, DEMOLISHER, INTERCEPTOR, MP, SP
@@ -43,6 +45,15 @@ class AttackStrategy:
 
         self.game_state = game_state
         self.config = config
+
+    def stall_with_interceptors(self):
+        """
+        Send out interceptors at random locations to defend our base from enemy moving units.
+        """
+        game_state = self.game_state
+        locations = [[4, 9], [23, 9], [7, 6], [20, 6]]
+        for loc in locations:
+            game_state.attempt_spawn(INTERCEPTOR, locations)
 
     def attack(self):
         game_state = self.game_state
@@ -79,7 +90,7 @@ class AttackStrategy:
 
     def make_h_wall(self, start, length, orientation):
         for i in range(length):
-            self.game_state.attempt_spawn(WALL, [start[0]+i*orientation, start[1]])
+            self.game_state.attempt_spawn(WALL, [start[0] + i * orientation, start[1]])
 
     def least_damage_spawn_location(self, game_state, location_options):
         """
@@ -182,12 +193,25 @@ class AttackStrategy:
         # but in practice will probably never happen
         return 0
 
+
     def demo_attack_weak_side(self):
+
         game_state = self.game_state
         gmap = game_state.game_map
 
-        strong_side = self.predict_opening(self.game_state)
-        weak_side = -strong_side
+        lbox = BoundedBox([1, 17], [5, 14], gmap)
+        rbox = BoundedBox([22, 17], [26, 14], gmap)
+
+        strong_side = 0
+
+        if len(lbox.get_units(TURRET)) > len(rbox.get_units(TURRET)):
+            strong_side = -1
+        else:
+            strong_side = 1
+
+        
+
+
 
         # start opposite side
         start_location = left_demo_start
@@ -201,5 +225,3 @@ def clamp(num, lower, upper) -> int:
     elif num > upper:
         return upper
     return num
-
-
