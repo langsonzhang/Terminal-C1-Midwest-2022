@@ -341,7 +341,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             walls_3 = ((22, 12),)
             upgrade_3 = ((1, 12),)
             # upgrade right side if we chose to upgrade left side earlier
-            if game_state.game_map[1][12] is not None and game_state.game_map[1][12].upgraded:
+            if game_state.game_map[1, 12] and game_state.game_map[1, 12][0].upgraded:
                 upgrade_3 = ((24, 12),)
 
             walls_loc.extend(walls_3)               # adds RHS wall in front of funnel turret
@@ -419,6 +419,133 @@ class AlgoStrategy(gamelib.AlgoCore):
         # Keep the right 2 walls as optional
         game_state.attempt_remove(((26, 13), (27, 13)))
 
+    def build_alt_defences(self, game_state):
+        """
+        Build basic defenses using hardcoded locations.
+        Remember to defend corners and avoid placing units in the front where enemy demolishers can attack them.
+        """
+
+        # Useful tool for setting up your base locations: https://www.kevinbai.design/terminal-map-maker
+        # More community tools available at: https://terminal.c1games.com/rules#Download
+        def add_expected_turret(location):
+            if location not in self.P1_WALLS_EXPECTED[location]:
+                self.P1_WALLS_EXPECTED[location] = 1
+
+        def add_expected_walls(location):
+            if location not in self.P1_TURRET_EXPECTED[location]:
+                self.P1_TURRET_EXPECTED[location] = 1
+
+        def mark_upgraded(location):
+            """Marks expected structure unit as level 2"""
+            if location in self.P1_WALLS_EXPECTED:
+                self.P1_WALLS_EXPECTED[location] = 2
+            else:
+                self.P1_TURRET_EXPECTED[location] = 2
+
+        turn_number = game_state.turn_number
+
+        turrets_loc = []
+        walls_loc = []
+        supports_loc = []
+        to_upgrade = []
+
+        if turn_number >= 0:
+            # left and right turrets
+            turrets_1 = [[2, 12], [25, 12], [5, 10], [22, 10]]
+            # general V shape
+            walls_1 = [[0, 13], [1, 13], [2, 13], [25, 13], [26, 13], [27, 13], [3, 12], [24, 12], [
+                5, 11], [22, 11], [6, 9], [7, 8], [8, 7], [9, 6], [10, 5], [11, 4], [12, 4], [13, 4], [14, 4], [15, 4]]
+
+            turrets_loc.extend(turrets_1)
+            walls_loc.extend(walls_1)
+
+            map(add_expected_turret, turrets_1)
+            map(add_expected_walls, walls_1)
+        if turn_number >= 1:
+            # TODO: Maybe choose smartly to upgrade between right or left turret early game
+            # complete V shape
+            walls_loc = [[0, 13], [1, 13], [2, 13], [25, 13], [26, 13], [27, 13], [3, 12], [24, 12], [5, 11], [22, 11],
+                         [6, 9], [21, 9], [7, 8], [20, 8], [8, 7], [19, 7], [9, 6], [18, 6], [10, 5], [17, 5], [11, 4],
+                         [12, 4], [13, 4], [14, 4], [15, 4], [16, 4]]
+            # to_upgrade.extend(upgrade_2)  # RHS vs. LHS (1, 12) first
+
+            # How do maps work? What If I add duplicates?
+            map(add_expected_walls, walls_loc)
+            # map(mark_upgraded, upgrade_2)
+
+        if turn_number >= 2:
+            # walls_3 = ((22, 12),)
+            upgrade_3 = ((2, 12), (25, 12))
+
+            # walls_loc.extend(walls_3)  # adds RHS wall in front of funnel turret
+            to_upgrade.extend(upgrade_3)  # upgrade LHS turret
+
+            # map(add_expected_walls, walls_3)
+            map(mark_upgraded, upgrade_3)
+
+        # TODO: Leaving RHS wall open at this turn
+        if turn_number >= 3:
+            pass
+
+        if turn_number >= 4:  # upgrade lower turrets
+            upgrade_4 = [[5, 10], [22, 10]]
+            walls4 = [[ 23, 11]]
+            to_upgrade.extend(upgrade_4)
+            walls_loc.extend(walls4)
+            map(mark_upgraded, upgrade_4)
+            map(add_expected_walls, walls4)
+
+        if turn_number >= 5:
+            upgrade5 = [[ 5, 10],[ 22, 10]]
+            to_upgrade.extend(upgrade5)
+
+            # map(add_expected_turret, )
+            # map(add_expected_walls, walls_5)
+            map(mark_upgraded, upgrade5)
+
+        if turn_number >= 6:
+            # turret_6 = ((22, 10),)
+            upgrade6 = [[ 5, 11],[ 22, 11]]
+            # turrets_loc.extend(turret_6)
+            to_upgrade.extend(upgrade6)
+            map(mark_upgraded, upgrade6)
+
+        # MID-LATE Game?
+        if turn_number >= 8:
+            turret7 = [[ 6, 10],[ 21, 10]]
+            upgrade7 = [[ 6, 10],[ 21, 10]]
+
+            turrets_loc.extend(turret7)
+            to_upgrade.extend(upgrade7)
+
+            map(add_expected_turret, turret7)
+            map(mark_upgraded, upgrade7)
+
+        # TODO: Add turn threshold to start adding support?
+        if turn_number >= 12:
+            support_12 = ((21, 9), (20, 8), (19, 7))
+            upgrade_12 = ((21, 9), (20, 8), (19, 7))
+
+            supports_loc.extend(support_12)
+            to_upgrade.extend(upgrade_12)
+            # We don't mark it as upgraded, so when repairing, we don't prioritize its upgrade
+
+
+        # Turn 1 Turrets & Walls\
+        print(turrets_loc, file=stderr)
+        game_state.attempt_spawn(TURRET, turrets_loc)
+        game_state.attempt_spawn(WALL, walls_loc)
+        # TODO: Edit upgrade, so it doesn't upgrade walls < 80% in health
+        game_state.attempt_upgrade(to_upgrade)
+
+        # (Mid-to-End Game) Supports
+        game_state.attempt_spawn(SUPPORT, supports_loc)
+        if len(supports_loc) != 0:
+            game_state.attempt_upgrade(supports_loc)
+
+        # Keep the right 2 walls as optional
+        game_state.attempt_remove(((26, 13), (27, 13)))
+        
     def build_reactive_defense(self, game_state):
         """
         This function builds reactive defenses based on where the enemy scored on us from.
@@ -524,10 +651,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         for location in location_options:
             path = game_state.find_path_to_edge(location)
             damage = 0
-
-
-
-            for path_location in path:
+            for path_location in path or []:
                 # Get number of enemy turrets that can attack each location and multiply by turret damage
                 damage += len(game_state.get_attackers(path_location, 0)) * gamelib.GameUnit(TURRET, game_state.config).damage_i
             damages.append(damage)
