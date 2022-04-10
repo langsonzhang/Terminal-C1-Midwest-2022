@@ -22,6 +22,7 @@ from collections import OrderedDict
 from heapq import heappush, heappop
 
 from build_alt_defenses import AltDefense
+from attack_strat import AttackStrategy
 
 class AlgoStrategy(gamelib.AlgoCore):
     def __init__(self):
@@ -218,6 +219,11 @@ class AlgoStrategy(gamelib.AlgoCore):
         # self.build_defences(game_state)
         defense = AltDefense(game_state, self.config)
         defense.build_defences()
+
+        attack = AttackStrategy(game_state, self.config)
+        attack.attack()
+
+        return
 
         # If the turn is less than 5, stall with interceptors and wait to see enemy's base
         if game_state.turn_number < 5:
