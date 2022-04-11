@@ -1,4 +1,4 @@
-# RESULTS
+# COMPETITION RESULTS
 Team: Murphy's Lawyers
 
 Placed #5 in 24 teams against competitors from top midwest universities such as Carnegie Mellon, Northwestern, UIUC, uWaterloo
