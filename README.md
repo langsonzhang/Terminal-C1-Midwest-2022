@@ -1,3 +1,10 @@
+# RESULTS
+Team: Murphy's Lawyers
+Placed #5 in 24 teams against competitors from top midwest universities such as Carnegie Mellon, Northwestern, UIUC, uWaterloo
+<img width="1034" alt="image" src="https://user-images.githubusercontent.com/72905894/162841899-7016fec6-8bc0-4f10-8ddd-a01a2eaf4d12.png">
+
+
+
 # C1GamesStarterKit
 
 Welcome to the C1 Terminal Starter Kit! The repository contains a collection of scripts and 
