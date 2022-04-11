@@ -5,19 +5,8 @@ Placed #5 in 24 teams against competitors from top midwest universities such as 
 <img width="1034" alt="image" src="https://user-images.githubusercontent.com/72905894/162841899-7016fec6-8bc0-4f10-8ddd-a01a2eaf4d12.png">
 
 
-
-# C1GamesStarterKit
-
-Welcome to the C1 Terminal Starter Kit! The repository contains a collection of scripts and 
-language-specific starter algos, to help you start your journey to develop the ultimate algo.
-
-For more details about competitions and the game itself please check out our
+For details about competitions and the game itself please check out
 [main site](https://terminal.c1games.com/rules).
-
-## Manual Play
-
-We recommend you familiarize yourself with the game and its strategic elements, by playing manually,
-before you start your algo. Check out [the playground](https://terminal.c1games.com/playground).
 
 ## Algo Development
 
