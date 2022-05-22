@@ -1,7 +1,7 @@
 # COMPETITION RESULTS
 Team: Murphy's Lawyers
 
-Placed #5 in 24 teams against competitors from top midwest universities such as Carnegie Mellon, Northwestern, UIUC, and uWaterloo.
+Placed #5 in 24 teams against top competitors from CMU, UMich, and UIUC.
 Certificate of participation: https://www.credential.net/64c4b845-a462-4c77-8262-e4ca827b1abf
 
 Top 10 Placements:
