@@ -1,7 +1,9 @@
 ## About
 Terminal Live is an AI programming competition featuring over 30,000 of the world’s best engineers and data scientists. The Spring 2022 Terminal Live season included virtual events for hundreds of students at the most prestigious universities in the US, Canada, Europe and Asia. At each competition, teams coded algorithms for a tower defense-style strategy game, and competed head-to-head in a single-elimination tournament.
 
-Our team, Murphy's Lawyers, consisted of myself, [Stan](https://github.com/stan-hua), and [George](https://github.com/CardboardTank), three UofT computer science students whom met each other due to a shared interest in AI and algorithms. Together, we developed the FUNNEL algorithm in python, which placed #5 out of 24 teams against top competitors from CMU, UMich, and UIUC.
+Our team, Murphy's Lawyers, consisted of myself, [Stan](https://github.com/stan-hua), and [George](https://github.com/CardboardTank), three UofT computer science students whom met each other due to a shared interest in AI and algorithms. Together, we developed the FUNNEL algorithm using python, which placed #5 out of 24 teams against top competitors from CMU, UMich, and UIUC.
+
+The starter kit provided by Correlation One can found [here](https://github.com/correlation-one/C1GamesStarterKit).
 
 Here is preview of our algorithm in action:
 <video src="https://user-images.githubusercontent.com/72905894/169751007-d641819e-8439-4b55-aacb-aba2352ecb38.mov">
