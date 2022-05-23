@@ -4,8 +4,9 @@ Terminal Live is an AI programming competition featuring over 30,000 of the worl
 Our team, Murphy's Lawyers, consisted of myself, [Stan](https://github.com/stan-hua), and [George](https://github.com/CardboardTank), three UofT computer science students whom met each other due to a shared interest in AI and algorithms. Together, we developed the FUNNEL algorithm in python, which placed #5 out of 24 teams against top competitors from CMU, UMich, and UIUC.
 
 Here is preview of our algorithm in action:
-https://user-images.githubusercontent.com/72905894/169749196-0ee95b48-387d-4d39-8cac-e8d6074489cb.mov
+<video src="https://user-images.githubusercontent.com/72905894/169751007-d641819e-8439-4b55-aacb-aba2352ecb38.mov">
 
+To learn more about the game and competition itself, check out the [main site](https://terminal.c1games.com/rules).
 
 
 ## Competition Results
@@ -17,10 +18,6 @@ Certificate of participation: https://www.credential.net/64c4b845-a462-4c77-8262
 Top 10 Placements:
 https://terminal.c1games.com/competitions/293/profile/19626
 <img width="1034" alt="image" src="https://user-images.githubusercontent.com/72905894/162841899-7016fec6-8bc0-4f10-8ddd-a01a2eaf4d12.png">
-
-
-For details about competitions and the game itself please check out
-[main site](https://terminal.c1games.com/rules).
 
 ## Usage
 
