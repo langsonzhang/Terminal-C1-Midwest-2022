@@ -1,7 +1,17 @@
-# COMPETITION RESULTS
+## About
+Terminal Live is an AI programming competition featuring over 30,000 of the world’s best engineers and data scientists. The Spring 2022 Terminal Live season included virtual events for hundreds of students at the most prestigious universities in the US, Canada, Europe and Asia. At each competition, teams coded algorithms for a tower defense-style strategy game, and competed head-to-head in a single-elimination tournament.
+
+Our team, Murphy's Lawyers, consisted of myself, [Stan](https://github.com/stan-hua), and [George](https://github.com/CardboardTank), three UofT computer science students whom met each other due to a shared interest in AI and algorithms. Together, we developed the FUNNEL algorithm in python, which placed #5 out of 24 teams against top competitors from CMU, UMich, and UIUC.
+
+Here is preview of our algorithm in action:
+https://user-images.githubusercontent.com/72905894/169749196-0ee95b48-387d-4d39-8cac-e8d6074489cb.mov
+
+
+
+## Competition Results
 Team: Murphy's Lawyers
 
-Placed #5 in 24 teams against top competitors from CMU, UMich, and UIUC.
+Placed #5 in 24 teams.
 Certificate of participation: https://www.credential.net/64c4b845-a462-4c77-8262-e4ca827b1abf
 
 Top 10 Placements:
@@ -12,16 +22,12 @@ https://terminal.c1games.com/competitions/293/profile/19626
 For details about competitions and the game itself please check out
 [main site](https://terminal.c1games.com/rules).
 
-## Algo Development
+## Usage
 
-To test your algo locally, you should use the test_algo_[OS] scripts in the scripts folder. Details on its use is documented in the README.md file in the scripts folder.
+To test the algo locally, you should use the test_algo_[OS] scripts in the scripts folder. Details on its use is documented in the README.md file in the scripts folder.
 
 For programming documentation of language specific algos, see each language specific README.
 For documentation of the game-config or the json format the engine uses to communicate the current game state, see json-docs.html
-
-For advanced users you can install java and run the game engine locally. Java 10 or above is required: [Java Development Kit 10 or above](http://www.oracle.com/technetwork/java/javase/downloads/jdk10-downloads-4416644.html).
-
-All code provided in the starterkit is meant to be used as a starting point, and can be overwritten completely by more advanced players to improve performance or provide additional utility.
 
 ## Windows Setup
 
@@ -41,10 +47,6 @@ If that still doesn't work, try these below:
     `Set-ExecutionPolicy RemoteSigned`
     
 And don't forget to run the PowerShell as admin.
-
-## Uploading Algos
-
-Simply select the folder of your algo when prompted on the [Terminal](https://terminal.c1games.com) website. Make sure to select the specific language folder such as "python-algo" do not select the entire starterkit itself.
 
 ## Troubleshooting
 
